@@ -1,0 +1,4 @@
+interface:
+  display_name: "Develop SNES Wrappers"
+  short_description: "Safely evolve the Apple and Android wrappers"
+  default_prompt: "Use $develop-snes-wrappers to implement a cross-platform SNES wrapper change."

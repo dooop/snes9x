@@ -1,0 +1,94 @@
+name: Publish Android AAR to Maven
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Maven version to publish"
+        required: true
+        type: string
+
+concurrency:
+  group: release-android-publish-${{ inputs.version }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  NDK_VERSION: "29.0.14206865"
+  SNES_ABIS: "arm64-v8a,x86_64"
+
+jobs:
+  publish:
+    name: Verify and publish Maven package
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+          fetch-depth: 1
+      - name: Validate version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+            echo "::error::Invalid Maven version: $VERSION"
+            exit 1
+          fi
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v4
+      - name: Install NDK
+        run: |
+          sdkmanager --install "ndk;${NDK_VERSION}"
+          echo "ANDROID_NDK_ROOT=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build release AAR
+        run: |
+          ./gradlew --no-daemon :snes:assembleRelease \
+            -Psnes.abis="${SNES_ABIS}" \
+            -Psnes.version="${{ inputs.version }}"
+      - name: Build sample from release AAR
+        run: |
+          ./gradlew --no-daemon :app:assembleLocalRelease \
+            -Psnes.releaseAar="${GITHUB_WORKSPACE}/android/snes/build/outputs/aar/snes-release.aar" \
+            -Psnes.abis="${SNES_ABIS}"
+      - name: Verify release artifacts
+        run: |
+          scripts/verify-release-artifacts.sh \
+            android/snes/build/outputs/aar/snes-release.aar \
+            android/app/build/outputs/apk/local/release/app-local-release-unsigned.apk \
+            "${SNES_ABIS}"
+      - name: Publish to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./gradlew --no-daemon :snes:publishReleasePublicationToGitHubPackagesRepository \
+            -Psnes.abis="${SNES_ABIS}" \
+            -Psnes.version="${{ inputs.version }}" \
+            -Psnes.githubRepository="${GITHUB_REPOSITORY}"
+      - name: Write provenance
+        run: |
+          {
+            echo "coordinates=io.github.dooop:snes:${{ inputs.version }}"
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "wrapper_commit=${GITHUB_SHA}"
+            echo "upstream_commit=$(git -C snes9x rev-parse HEAD)"
+            echo "abis=${SNES_ABIS}"
+            echo "ndk=${NDK_VERSION}"
+          } > android-release-provenance.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: snes-android-${{ inputs.version }}
+          path: |
+            android/snes/build/outputs/aar/snes-release.aar
+            android/snes/build/publications/release/pom-default.xml
+            android/snes/build/intermediates/source_jar/release/release-sources.jar
+            android/app/build/outputs/apk/local/release/app-local-release-unsigned.apk
+            android-release-provenance.txt
+          if-no-files-found: error
