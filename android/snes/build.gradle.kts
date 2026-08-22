@@ -79,6 +79,12 @@ afterEvaluate {
             create<MavenPublication>("release") {
                 from(components["release"])
                 artifactId = "snes"
+                providers.gradleProperty("snes.completeSourceArchive").orNull?.let { archivePath ->
+                    artifact(file(archivePath)) {
+                        classifier = "complete-source"
+                        extension = "tar.gz"
+                    }
+                }
                 pom {
                     name.set("snes9x")
                     description.set("SwiftUI and Android Compose wrappers around Snes9x")
@@ -86,7 +92,7 @@ afterEvaluate {
                     licenses {
                         license {
                             name.set("Snes9x License (non-commercial)")
-                            url.set("https://github.com/snes9xgit/snes9x/blob/master/LICENSE")
+                            url.set("https://github.com/dooop/snes/blob/main/LICENSE")
                             distribution.set("repo")
                         }
                     }

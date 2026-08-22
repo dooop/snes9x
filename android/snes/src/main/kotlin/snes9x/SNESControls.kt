@@ -1,5 +1,10 @@
+// Copyright (C) 2026 Dominic Opitz
+// SPDX-License-Identifier: LicenseRef-Snes9x
+
 package snes9x
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -10,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -18,12 +24,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -66,6 +79,14 @@ private fun GamepadControls(
     metrics: ControllerMetrics,
     palette: ControllerPalette,
 ) {
+    val controllerLabel = rememberControllerLabel(configuration)
+    val bodyShape =
+        when (configuration.theme) {
+            SNESControllerTheme.System -> RoundedCornerShape(24.dp)
+            SNESControllerTheme.SNES,
+            SNESControllerTheme.SuperFamicom,
+            -> RoundedCornerShape(72.dp)
+        }
     Row(
         modifier =
             Modifier
@@ -78,24 +99,31 @@ private fun GamepadControls(
                 Modifier
                     .fillMaxWidth()
                     .widthIn(max = 680.dp)
-                    .shadow(14.dp, RoundedCornerShape(24.dp))
-                    .background(palette.body, RoundedCornerShape(24.dp))
-                    .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(24.dp))
+                    .shadow(14.dp, bodyShape)
+                    .background(palette.body, bodyShape)
+                    .border(1.dp, Color.White.copy(alpha = 0.14f), bodyShape)
                     .padding(metrics.bodyPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom,
         ) {
             DPad(engine, configuration, metrics, palette, 1f)
             Column(
-                modifier = Modifier.padding(horizontal = metrics.sectionSpacing),
+                modifier =
+                    Modifier
+                        .padding(horizontal = metrics.sectionSpacing)
+                        .background(palette.panel.copy(alpha = 0.24f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = metrics.utilitySpacing, vertical = metrics.utilitySpacing),
                 verticalArrangement = Arrangement.spacedBy(metrics.utilitySpacing),
             ) {
-                Text(
-                    text = if (configuration.theme == SNESControllerTheme.SuperFamicom) "SUPER FAMICOM" else "SNES",
-                    color = palette.bodyLabel,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Black,
-                )
+                if (controllerLabel.isNotEmpty()) {
+                    Text(
+                        text = controllerLabel,
+                        color = palette.bodyLabel,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                    )
+                }
                 UtilityButtons(engine, configuration, metrics, palette, 1f)
             }
             ActionButtons(engine, configuration, metrics, palette, 1f)
@@ -182,7 +210,10 @@ private fun DPad(
             Box(
                 Modifier
                     .size(metrics.direction)
-                    .background(palette.directionalPad.copy(alpha = palette.directionalPad.alpha * opacity)),
+                    .background(palette.directionalPad.copy(alpha = palette.directionalPad.alpha * opacity))
+                    .padding(metrics.direction * 0.23f)
+                    .background(Color.Black.copy(alpha = 0.16f * opacity), CircleShape)
+                    .border(1.dp, Color.White.copy(alpha = 0.08f * opacity), CircleShape),
             )
             ControllerButton(
                 "▶",
@@ -289,56 +320,64 @@ private fun ActionButtons(
                 opacity,
             )
         }
-        ControllerButton(
-            "X",
-            SNESButton.X,
-            engine,
-            metrics.actionSize,
-            metrics.actionSize,
-            CircleShape,
-            palette.actionButtons,
-            palette.labels,
-            configuration,
-            opacity,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(metrics.actionSize)) {
-            ControllerButton(
-                "Y",
-                SNESButton.Y,
-                engine,
-                metrics.actionSize,
-                metrics.actionSize,
-                CircleShape,
-                palette.actionButtons,
-                palette.labels,
-                configuration,
-                opacity,
-            )
-            ControllerButton(
-                "A",
-                SNESButton.A,
-                engine,
-                metrics.actionSize,
-                metrics.actionSize,
-                CircleShape,
-                palette.actionButtons,
-                palette.labels,
-                configuration,
-                opacity,
-            )
+        Box(Modifier.size(metrics.actionSize * 2.5f), contentAlignment = Alignment.Center) {
+            Box(Modifier.offset(y = -metrics.actionSize * 0.72f)) {
+                ControllerButton(
+                    "X",
+                    SNESButton.X,
+                    engine,
+                    metrics.actionSize,
+                    metrics.actionSize,
+                    CircleShape,
+                    palette.actionColor("X"),
+                    palette.labels,
+                    configuration,
+                    opacity,
+                )
+            }
+            Box(Modifier.offset(x = -metrics.actionSize * 0.72f)) {
+                ControllerButton(
+                    "Y",
+                    SNESButton.Y,
+                    engine,
+                    metrics.actionSize,
+                    metrics.actionSize,
+                    CircleShape,
+                    palette.actionColor("Y"),
+                    palette.labels,
+                    configuration,
+                    opacity,
+                )
+            }
+            Box(Modifier.offset(x = metrics.actionSize * 0.72f)) {
+                ControllerButton(
+                    "A",
+                    SNESButton.A,
+                    engine,
+                    metrics.actionSize,
+                    metrics.actionSize,
+                    CircleShape,
+                    palette.actionColor("A"),
+                    palette.labels,
+                    configuration,
+                    opacity,
+                )
+            }
+            Box(Modifier.offset(y = metrics.actionSize * 0.72f)) {
+                ControllerButton(
+                    "B",
+                    SNESButton.B,
+                    engine,
+                    metrics.actionSize,
+                    metrics.actionSize,
+                    CircleShape,
+                    palette.actionColor("B"),
+                    palette.labels,
+                    configuration,
+                    opacity,
+                )
+            }
         }
-        ControllerButton(
-            "B",
-            SNESButton.B,
-            engine,
-            metrics.actionSize,
-            metrics.actionSize,
-            CircleShape,
-            palette.actionButtons,
-            palette.labels,
-            configuration,
-            opacity,
-        )
     }
 }
 
@@ -356,20 +395,40 @@ private fun ControllerButton(
     opacity: Float,
 ) {
     val surface = color.copy(alpha = color.alpha * opacity)
+    val hapticFeedback = LocalHapticFeedback.current
+    var isPressed by remember(button) { mutableStateOf(false) }
+    val pressedScale by
+        animateFloatAsState(
+            targetValue = if (isPressed) 0.92f else 1f,
+            animationSpec = tween(durationMillis = 80),
+            label = "controllerButtonScale",
+        )
     Box(
         modifier =
             Modifier
                 .size(width, height)
-                .shadow(if (configuration.theme == SNESControllerTheme.System) 5.dp else 3.dp, shape)
+                .graphicsLayer {
+                    scaleX = pressedScale
+                    scaleY = pressedScale
+                    alpha = if (isPressed) 0.88f else 1f
+                }.shadow(if (configuration.theme == SNESControllerTheme.System) 5.dp else 3.dp, shape)
                 .background(surface, shape)
                 .border(1.dp, Color.White.copy(alpha = 0.18f * opacity), shape)
                 .semantics { contentDescription = label }
-                .pointerInput(button) {
+                .pointerInput(button, configuration.hapticsEnabled) {
                     detectTapGestures(
                         onPress = {
+                            isPressed = true
+                            if (configuration.hapticsEnabled) {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
                             engine.setButton(button, true)
-                            tryAwaitRelease()
-                            engine.setButton(button, false)
+                            try {
+                                tryAwaitRelease()
+                            } finally {
+                                engine.setButton(button, false)
+                                isPressed = false
+                            }
                         },
                     )
                 },
@@ -415,7 +474,11 @@ private data class ControllerPalette(
     val utilityButtons: Color,
     val labels: Color,
     val bodyLabel: Color,
+    val panel: Color,
+    val actionColors: Map<String, Color> = emptyMap(),
 )
+
+private fun ControllerPalette.actionColor(label: String): Color = actionColors[label] ?: actionButtons
 
 @Composable
 private fun controllerPalette(configuration: SNESControllerConfiguration): ControllerPalette {
@@ -429,15 +492,7 @@ private fun controllerPalette(configuration: SNESControllerConfiguration): Contr
                     utilityButtons = MaterialTheme.colorScheme.secondary,
                     labels = MaterialTheme.colorScheme.onPrimary,
                     bodyLabel = MaterialTheme.colorScheme.onSurface,
-                )
-            SNESControllerTheme.SNES ->
-                ControllerPalette(
-                    Color(0xFFB3B3AE),
-                    Color(0xFF1A1A1A),
-                    Color(0xFFAB0D1F),
-                    Color(0xFF292929),
-                    Color.White,
-                    Color(0xFF262626),
+                    panel = MaterialTheme.colorScheme.onSurface,
                 )
             SNESControllerTheme.SuperFamicom ->
                 ControllerPalette(
@@ -447,6 +502,29 @@ private fun controllerPalette(configuration: SNESControllerConfiguration): Contr
                     Color(0xFF4D4D4D),
                     Color.White,
                     Color(0xFF2E2E2E),
+                    Color(0xFFADADAD),
+                    mapOf(
+                        "X" to Color(0xFF4A66B0),
+                        "Y" to Color(0xFF3FAE73),
+                        "A" to Color(0xFFD95961),
+                        "B" to Color(0xFFD6B54D),
+                    ),
+                )
+            SNESControllerTheme.SNES ->
+                ControllerPalette(
+                    Color(0xFFB3B3AE),
+                    Color(0xFF1A1A1A),
+                    Color(0xFF5C4A8F),
+                    Color(0xFF3D3D3D),
+                    Color.White,
+                    Color(0xFF262626),
+                    Color(0xFF9E9E9E),
+                    mapOf(
+                        "X" to Color(0xFFB8A4D4),
+                        "Y" to Color(0xFFB8A4D4),
+                        "A" to Color(0xFF5C4A8F),
+                        "B" to Color(0xFF5C4A8F),
+                    ),
                 )
         }
     val overrides = configuration.colors
@@ -454,6 +532,9 @@ private fun controllerPalette(configuration: SNESControllerConfiguration): Contr
         body = overrides.body ?: defaults.body,
         directionalPad = overrides.directionalPad ?: defaults.directionalPad,
         actionButtons = overrides.actionButtons ?: defaults.actionButtons,
+        actionColors =
+            overrides.actionButtons?.let { color -> defaults.actionColors.mapValues { color } }
+                ?: defaults.actionColors,
         utilityButtons = overrides.utilityButtons ?: defaults.utilityButtons,
         labels = overrides.labels ?: defaults.labels,
         bodyLabel = overrides.bodyLabel ?: defaults.bodyLabel,

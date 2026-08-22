@@ -37,15 +37,6 @@ done
 rm -rf "$OUTPUT_DIR/CSNESCore.xcframework" "$OUTPUT_DIR/CSNESCore.xcframework.zip"
 xcodebuild -create-xcframework "${ARGS[@]}" -output "$OUTPUT_DIR/CSNESCore.xcframework"
 
-(
-    cd "$OUTPUT_DIR"
-    ditto -c -k --sequesterRsrc --keepParent CSNESCore.xcframework CSNESCore.xcframework.zip
-)
-
-export SNES_BUILD_FROM_SOURCE=1
-swift package --package-path "$REPO_ROOT" compute-checksum \
-    "$OUTPUT_DIR/CSNESCore.xcframework.zip" > "$OUTPUT_DIR/checksum.txt"
-
 {
     echo "snes prebuilt CSNESCore"
     echo
@@ -56,6 +47,24 @@ swift package --package-path "$REPO_ROOT" compute-checksum \
     echo "Snes9x uses its non-commercial upstream license; see LICENSE in the source bundle."
     echo "Commercial distribution requires permission from the Snes9x copyright holders."
 } > "$OUTPUT_DIR/SOURCES.txt"
+
+mkdir -p "$OUTPUT_DIR/CSNESCore.xcframework/LICENSES"
+cp "$REPO_ROOT/LICENSE" "$OUTPUT_DIR/CSNESCore.xcframework/LICENSE"
+cp "$REPO_ROOT/LICENSES/snes_ntsc-license.txt" \
+    "$OUTPUT_DIR/CSNESCore.xcframework/LICENSES/snes_ntsc-license.txt"
+cp "$OUTPUT_DIR/SOURCES.txt" "$OUTPUT_DIR/CSNESCore.xcframework/SOURCES.txt"
+
+(
+    cd "$OUTPUT_DIR"
+    ditto -c -k --sequesterRsrc --keepParent CSNESCore.xcframework CSNESCore.xcframework.zip
+)
+unzip -p "$OUTPUT_DIR/CSNESCore.xcframework.zip" CSNESCore.xcframework/LICENSE | cmp "$REPO_ROOT/LICENSE" -
+unzip -p "$OUTPUT_DIR/CSNESCore.xcframework.zip" \
+    CSNESCore.xcframework/LICENSES/snes_ntsc-license.txt | cmp "$REPO_ROOT/LICENSES/snes_ntsc-license.txt" -
+
+export SNES_BUILD_FROM_SOURCE=1
+swift package --package-path "$REPO_ROOT" compute-checksum \
+    "$OUTPUT_DIR/CSNESCore.xcframework.zip" > "$OUTPUT_DIR/checksum.txt"
 
 echo "Created CSNESCore.xcframework.zip"
 echo "Checksum: $(cat "$OUTPUT_DIR/checksum.txt")"

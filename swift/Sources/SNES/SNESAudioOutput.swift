@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Dominic Opitz
+// SPDX-License-Identifier: LicenseRef-Snes9x
+
 import AVFoundation
 
 final class SNESAudioOutput {

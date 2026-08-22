@@ -1,12 +1,16 @@
+// Copyright (C) 2026 Dominic Opitz
+// SPDX-License-Identifier: LicenseRef-Snes9x
+
+import Foundation
 import SwiftUI
 
 /// The visual identity used by the on-screen controller.
 public enum SNESControllerTheme: Sendable, Equatable {
     /// Uses a translucent, system-material surface with the current accent color.
     case system
-    /// Uses the gray, black, and red palette of the original SNES controller.
+    /// Uses the two-tone purple action-button palette of the original North American controller.
     case snes
-    /// Uses the light-gray, dark-gray, and multicolor palette of the Super Famicom controller.
+    /// Uses the four-color action-button palette of the original international controller.
     case superFamicom
 }
 
@@ -51,6 +55,10 @@ public struct SNESControllerConfiguration {
     public var theme: SNESControllerTheme
     public var presentationMode: SNESControllerPresentationMode
     public var colors: SNESControllerColorOverrides
+    /// Text shown on the controller body. `nil` uses the main app bundle name; an empty string hides it.
+    public var controllerLabel: String?
+    /// Enables tactile feedback when an on-screen control is pressed.
+    public var hapticsEnabled: Bool
     /// Opacity applied to button surfaces in overlay mode.
     public var overlayOpacity: Double
 
@@ -58,11 +66,25 @@ public struct SNESControllerConfiguration {
         theme: SNESControllerTheme = .system,
         presentationMode: SNESControllerPresentationMode = .automatic,
         colors: SNESControllerColorOverrides = .init(),
+        controllerLabel: String? = nil,
+        hapticsEnabled: Bool = true,
         overlayOpacity: Double = 0.72
     ) {
         self.theme = theme
         self.presentationMode = presentationMode
         self.colors = colors
+        self.controllerLabel = controllerLabel
+        self.hapticsEnabled = hapticsEnabled
         self.overlayOpacity = min(max(overlayOpacity, 0), 1)
+    }
+
+    var resolvedControllerLabel: String {
+        if let controllerLabel { return controllerLabel }
+        for key in ["CFBundleDisplayName", "CFBundleName"] {
+            if let value = Bundle.main.object(forInfoDictionaryKey: key) as? String, !value.isEmpty {
+                return value
+            }
+        }
+        return ProcessInfo.processInfo.processName
     }
 }

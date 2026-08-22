@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Dominic Opitz
+// SPDX-License-Identifier: LicenseRef-Snes9x
+
 import CSNESCore
 import Foundation
 import Testing
@@ -33,12 +36,23 @@ import Testing
     let configuration = SNESControllerConfiguration()
     #expect(configuration.theme == .system)
     #expect(configuration.presentationMode == .automatic)
+    #expect(configuration.hapticsEnabled)
     #expect(configuration.overlayOpacity == 0.72)
+}
+
+@Test func controllerConfigurationOffersOriginalThemes() {
+    #expect(SNESControllerConfiguration(theme: .snes).theme == .snes)
+    #expect(SNESControllerConfiguration(theme: .superFamicom).theme == .superFamicom)
 }
 
 @Test func controllerConfigurationClampsOverlayOpacity() {
     #expect(SNESControllerConfiguration(overlayOpacity: -1).overlayOpacity == 0)
     #expect(SNESControllerConfiguration(overlayOpacity: 2).overlayOpacity == 1)
+}
+
+@Test func controllerConfigurationPreservesCustomControllerLabel() {
+    #expect(SNESControllerConfiguration(controllerLabel: "My App").resolvedControllerLabel == "My App")
+    #expect(SNESControllerConfiguration(controllerLabel: "").resolvedControllerLabel.isEmpty)
 }
 
 @Test func externalControllerHidesOnScreenControls() {

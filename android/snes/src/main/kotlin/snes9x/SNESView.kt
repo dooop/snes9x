@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Dominic Opitz
+// SPDX-License-Identifier: LicenseRef-Snes9x
+
 package snes9x
 
 import android.content.res.Configuration
@@ -39,6 +42,7 @@ fun SNESView(
 ) {
     val frame by engine.frame.collectAsStateWithLifecycle()
     val state by engine.state.collectAsStateWithLifecycle()
+    val controllerLabel = rememberControllerLabel(controllerConfiguration)
     val focusRequester = remember { FocusRequester() }
     val deviceConfiguration = LocalConfiguration.current
     val isTelevision =
@@ -63,7 +67,7 @@ fun SNESView(
         frame?.let {
             Image(
                 bitmap = it.asImageBitmap(),
-                contentDescription = "SNES video",
+                contentDescription = "Game video",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,
                 filterQuality = FilterQuality.None,
@@ -71,7 +75,7 @@ fun SNESView(
         } ?: when (val current = state) {
             SNESState.Loading -> CircularProgressIndicator(color = Color.White)
             is SNESState.Failed -> Text(current.message, color = Color.White)
-            else -> Text("SNES", color = Color.Gray)
+            else -> Text(controllerLabel, color = Color.Gray)
         }
 
         if (hasExternalController || isTelevision) {

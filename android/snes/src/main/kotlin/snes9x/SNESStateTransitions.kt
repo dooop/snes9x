@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Dominic Opitz
+// SPDX-License-Identifier: LicenseRef-Snes9x
+
 package snes9x
 
 internal fun SNESState.afterPauseRequest(): SNESState =

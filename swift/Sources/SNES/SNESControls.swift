@@ -1,4 +1,13 @@
+// Copyright (C) 2026 Dominic Opitz
+// SPDX-License-Identifier: LicenseRef-Snes9x
+
 import SwiftUI
+
+#if os(iOS)
+    import UIKit
+#elseif os(macOS)
+    import AppKit
+#endif
 
 public struct SNESControls: View {
     private let engine: SNESEngine
@@ -25,7 +34,7 @@ public struct SNESControls: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("SNES controller")
+        .accessibilityLabel("Game controller")
     }
 
     private func resolvedMode(for size: CGSize) -> SNESControllerPresentationMode {
@@ -38,12 +47,21 @@ public struct SNESControls: View {
             dPad(metrics: metrics, palette: palette, opacity: 1)
             Spacer(minLength: metrics.sectionSpacing)
             VStack(spacing: metrics.utilitySpacing) {
-                Text(configuration.theme == .superFamicom ? "SUPER FAMICOM" : "SNES")
-                    .font(.system(size: 10, weight: .black, design: .rounded))
-                    .foregroundStyle(palette.bodyLabel)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                if !configuration.resolvedControllerLabel.isEmpty {
+                    Text(configuration.resolvedControllerLabel)
+                        .font(.system(size: 10, weight: .black, design: .rounded))
+                        .foregroundStyle(palette.bodyLabel)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 utilityButtons(metrics: metrics, palette: palette, opacity: 1)
             }
+            .padding(.horizontal, metrics.utilitySpacing)
+            .padding(.vertical, metrics.utilitySpacing)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(palette.panel.opacity(configuration.theme == .system ? 0.12 : 0.24))
+            )
             Spacer(minLength: metrics.sectionSpacing)
             actionButtons(metrics: metrics, palette: palette, opacity: 1)
         }
@@ -68,7 +86,7 @@ public struct SNESControls: View {
     }
 
     private func controllerBody(palette: Palette) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
+        let shape = controllerBodyShape
         return ZStack {
             if configuration.theme == .system {
                 #if compiler(>=6.2)
@@ -91,6 +109,13 @@ public struct SNESControls: View {
         .shadow(color: .black.opacity(0.24), radius: 14, y: 8)
     }
 
+    private var controllerBodyShape: AnyShape {
+        switch configuration.theme {
+        case .system: AnyShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        case .snes, .superFamicom: AnyShape(RoundedRectangle(cornerRadius: 72, style: .continuous))
+        }
+    }
+
     private func dPad(metrics: Metrics, palette: Palette, opacity: Double) -> some View {
         Grid(horizontalSpacing: 0, verticalSpacing: 0) {
             GridRow {
@@ -104,8 +129,14 @@ public struct SNESControls: View {
                 control(
                     "◀", .left, size: CGSize(width: metrics.direction, height: metrics.direction), shape: .rounded,
                     color: palette.dPad, palette: palette, opacity: opacity)
-                Rectangle().fill(palette.dPad.opacity(opacity)).frame(
-                    width: metrics.direction, height: metrics.direction)
+                ZStack {
+                    Rectangle().fill(palette.dPad.opacity(opacity))
+                    Circle()
+                        .fill(.black.opacity(0.16 * opacity))
+                        .overlay(Circle().stroke(.white.opacity(0.08 * opacity), lineWidth: 1))
+                        .frame(width: metrics.direction * 0.54, height: metrics.direction * 0.54)
+                }
+                .frame(width: metrics.direction, height: metrics.direction)
                 control(
                     "▶", .right, size: CGSize(width: metrics.direction, height: metrics.direction), shape: .rounded,
                     color: palette.dPad, palette: palette, opacity: opacity)
@@ -141,31 +172,29 @@ public struct SNESControls: View {
                     "R", .r, size: metrics.utility, shape: .capsule, color: palette.utility, palette: palette,
                     opacity: opacity)
             }
-            Grid(horizontalSpacing: metrics.actionSpacing / 2, verticalSpacing: 0) {
-                GridRow {
-                    Color.clear.frame(width: metrics.action.width, height: metrics.action.height)
-                    control(
-                        "X", .x, size: metrics.action, shape: .circle, color: palette.action, palette: palette,
-                        opacity: opacity)
-                    Color.clear.frame(width: metrics.action.width, height: metrics.action.height)
-                }
-                GridRow {
-                    control(
-                        "Y", .y, size: metrics.action, shape: .circle, color: palette.action, palette: palette,
-                        opacity: opacity)
-                    Color.clear.frame(width: metrics.action.width, height: metrics.action.height)
-                    control(
-                        "A", .a, size: metrics.action, shape: .circle, color: palette.action, palette: palette,
-                        opacity: opacity)
-                }
-                GridRow {
-                    Color.clear.frame(width: metrics.action.width, height: metrics.action.height)
-                    control(
-                        "B", .b, size: metrics.action, shape: .circle, color: palette.action, palette: palette,
-                        opacity: opacity)
-                    Color.clear.frame(width: metrics.action.width, height: metrics.action.height)
-                }
+            ZStack {
+                control(
+                    "X", .x, size: metrics.action, shape: .circle, color: palette.actionColor("X"), palette: palette,
+                    opacity: opacity
+                )
+                .offset(y: -metrics.action.height * 0.72)
+                control(
+                    "Y", .y, size: metrics.action, shape: .circle, color: palette.actionColor("Y"), palette: palette,
+                    opacity: opacity
+                )
+                .offset(x: -metrics.action.width * 0.72)
+                control(
+                    "A", .a, size: metrics.action, shape: .circle, color: palette.actionColor("A"), palette: palette,
+                    opacity: opacity
+                )
+                .offset(x: metrics.action.width * 0.72)
+                control(
+                    "B", .b, size: metrics.action, shape: .circle, color: palette.actionColor("B"), palette: palette,
+                    opacity: opacity
+                )
+                .offset(y: metrics.action.height * 0.72)
             }
+            .frame(width: metrics.action.width * 2.5, height: metrics.action.height * 2.5)
         }
     }
 
@@ -183,12 +212,12 @@ public struct SNESControls: View {
             }
             .buttonStyle(.plain)
         #else
-            controlLabel(label, size: size, shape: shape, color: color, palette: palette, opacity: opacity)
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { _ in engine.setButton(button, pressed: true) }
-                        .onEnded { _ in engine.setButton(button, pressed: false) }
-                )
+            PressableControl(
+                hapticsEnabled: configuration.hapticsEnabled,
+                onPressedChange: { engine.setButton(button, pressed: $0) }
+            ) {
+                controlLabel(label, size: size, shape: shape, color: color, palette: palette, opacity: opacity)
+            }
         #endif
     }
 
@@ -262,23 +291,39 @@ private struct Palette {
     let utility: Color
     let labels: Color
     let bodyLabel: Color
+    let panel: Color
+    private let actionColors: [String: Color]
 
     init(theme: SNESControllerTheme, overrides: SNESControllerColorOverrides) {
-        let defaults: (Color, Color, Color, Color, Color, Color)
+        let defaults: (Color, Color, Color, Color, Color, Color, Color, [String: Color])
         switch theme {
         case .system:
             defaults = (
-                .primary.opacity(0.08), .primary.opacity(0.68), .accentColor, .primary.opacity(0.55), .white, .primary
+                .primary.opacity(0.08), .primary.opacity(0.68), .accentColor, .primary.opacity(0.55), .white, .primary,
+                .primary.opacity(0.12), [:]
+            )
+        case .superFamicom:
+            defaults = (
+                Color(white: 0.78), Color(white: 0.16), Color(red: 0.32, green: 0.24, blue: 0.55),
+                Color(white: 0.30), .white, Color(white: 0.18), Color(white: 0.68),
+                [
+                    "X": Color(red: 0.29, green: 0.40, blue: 0.69),
+                    "Y": Color(red: 0.25, green: 0.68, blue: 0.45),
+                    "A": Color(red: 0.85, green: 0.35, blue: 0.38),
+                    "B": Color(red: 0.84, green: 0.71, blue: 0.30),
+                ]
             )
         case .snes:
             defaults = (
                 Color(red: 0.70, green: 0.70, blue: 0.68), Color(white: 0.10),
-                Color(red: 0.67, green: 0.05, blue: 0.12), Color(white: 0.16), .white, Color(white: 0.15)
-            )
-        case .superFamicom:
-            defaults = (
-                Color(white: 0.78), Color(white: 0.16), Color(red: 0.32, green: 0.24, blue: 0.55), Color(white: 0.30),
-                .white, Color(white: 0.18)
+                Color(red: 0.36, green: 0.29, blue: 0.56), Color(white: 0.24), .white, Color(white: 0.15),
+                Color(white: 0.62),
+                [
+                    "X": Color(red: 0.72, green: 0.64, blue: 0.83),
+                    "Y": Color(red: 0.72, green: 0.64, blue: 0.83),
+                    "A": Color(red: 0.36, green: 0.29, blue: 0.56),
+                    "B": Color(red: 0.36, green: 0.29, blue: 0.56),
+                ]
             )
         }
         body = overrides.body ?? defaults.0
@@ -287,7 +332,56 @@ private struct Palette {
         utility = overrides.utilityButtons ?? defaults.3
         labels = overrides.labels ?? defaults.4
         bodyLabel = overrides.bodyLabel ?? defaults.5
+        panel = defaults.6
+        if let actionOverride = overrides.actionButtons {
+            actionColors = Dictionary(uniqueKeysWithValues: ["X", "Y", "A", "B"].map { ($0, actionOverride) })
+        } else {
+            actionColors = defaults.7
+        }
     }
+
+    func actionColor(_ label: String) -> Color {
+        actionColors[label] ?? action
+    }
+}
+
+private struct PressableControl<Content: View>: View {
+    let hapticsEnabled: Bool
+    let onPressedChange: (Bool) -> Void
+    @ViewBuilder let content: () -> Content
+    @State private var isPressed = false
+
+    var body: some View {
+        content()
+            .scaleEffect(isPressed ? 0.92 : 1)
+            .brightness(isPressed ? -0.12 : 0)
+            .animation(.easeOut(duration: 0.08), value: isPressed)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        guard !isPressed else { return }
+                        isPressed = true
+                        onPressedChange(true)
+                        if hapticsEnabled { performControllerHaptic() }
+                    }
+                    .onEnded { _ in release() }
+            )
+            .onDisappear { release() }
+    }
+
+    private func release() {
+        guard isPressed else { return }
+        isPressed = false
+        onPressedChange(false)
+    }
+}
+
+private func performControllerHaptic() {
+    #if os(iOS)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.75)
+    #elseif os(macOS)
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+    #endif
 }
 
 private enum ControlShape {

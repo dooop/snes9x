@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Dominic Opitz
+// SPDX-License-Identifier: LicenseRef-Snes9x
+
 import Foundation
 
 /// Runtime options for one Snes9x session.

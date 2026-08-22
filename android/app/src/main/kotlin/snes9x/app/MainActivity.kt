@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Dominic Opitz
+// SPDX-License-Identifier: LicenseRef-Snes9x
+
 package snes9x.app
 
 import android.content.Intent
@@ -45,7 +48,7 @@ class MainActivity : ComponentActivity() {
                     val selectedROM = romURI
                     if (selectedROM == null) {
                         Button(onClick = { picker.launch(arrayOf("application/octet-stream", "*/*")) }) {
-                            Text("SNES-ROM öffnen")
+                            Text("Spieldatei öffnen")
                         }
                     } else {
                         SNES(

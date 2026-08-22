@@ -1,6 +1,6 @@
 # snes
 
-A Super Nintendo/Super Famicom engine for Apple and Android, backed by the unmodified official [Snes9x](https://github.com/snes9xgit/snes9x) core.
+A 16-bit cartridge-console engine for Apple and Android, backed by the unmodified official [Snes9x](https://github.com/snes9xgit/snes9x) core.
 
 ```text
 snes9x/                    upstream git submodule; read-only
@@ -46,7 +46,7 @@ The public `SNES` target is always built from source. `CSNESCore` supports two p
 
 `SNES` starts on appearance and stops on disappearance. `SNESView(engine:)` and `SNESEngine` provide explicit lifecycle, save-state, reset, cheat, and custom-control access. Apple game controllers and keyboards map D-pad, A/B/X/Y, L/R, Start, and Select for up to two players. Connecting an external controller hides touch controls; tvOS requests a controller instead of showing touch input.
 
-The on-screen controller offers system, SNES, and Super Famicom themes plus gamepad/overlay presentation:
+The on-screen controller offers the default adaptive `system` theme plus `snes` with the original two-tone-purple palette and `superFamicom` with the original four-color palette. Every on-screen button provides tactile press feedback by default; set `hapticsEnabled` to `false` to disable it. The controller body uses the host app name by default; `controllerLabel` can replace it or hide it with an empty string:
 
 ```swift
 SNES(
@@ -54,6 +54,7 @@ SNES(
     controllerConfiguration: SNESControllerConfiguration(
         theme: .superFamicom,
         presentationMode: .automatic,
+        controllerLabel: "My App",
         colors: SNESControllerColorOverrides(actionButtons: .purple)
     )
 )
@@ -77,14 +78,15 @@ SNES(
 
 The library namespace and public Kotlin package are `snes9x`; the sample application id is `snes9x.app`. Compose, keyboard, analog stick, D-pad, and physical gamepad input map to the same native masks as Apple. Android TV uses the same controller-only presentation behavior.
 
-Source checkouts use `implementation(project(":snes"))`. Release AARs are configured as `io.github.dooop:snes:<version>` from GitHub Packages. The sample's `localDebug` variant uses source, `localRelease` uses `-Psnes.releaseAar=/absolute/path/to/snes-release.aar`, and `maven` variants use the published coordinate.
+Source checkouts use `implementation(project(":snes"))`. Release AARs are configured as `io.github.dooop:snes:<version>` from GitHub Packages. The sample's `localDebug` variant uses source, `localRelease` uses `-Psnes.releaseAar=/absolute/path/to/snes-release.aar`, and `maven` variants use the published coordinate. The AAR and sample APK contain all applicable license texts under `assets/licenses/`; Maven releases additionally publish a `complete-source` archive. Apple XCFramework archives embed the license texts and source provenance at their root.
 
 ```kotlin
 SNES(
     configuration = SNESConfiguration(romUri = documentUri),
     controllerConfiguration = SNESControllerConfiguration(
-        theme = SNESControllerTheme.SuperFamicom,
+        theme = SNESControllerTheme.SNES,
         presentationMode = SNESControllerPresentationMode.Automatic,
+        controllerLabel = "My App",
         colors = SNESControllerColorOverrides(actionButtons = Color(0xFF6850A4)),
     ),
     modifier = Modifier.fillMaxSize(),
@@ -97,4 +99,4 @@ No ROMs, firmware, BIOS files, or copyrighted game assets are included. Supply l
 
 ## License
 
-Snes9x is not GPL software. It is distributed under the upstream [Snes9x License](LICENSE), which permits binary and source redistribution for non-commercial purposes when its license information and copyright notice accompany every copy and derived work. Commercial users must obtain permission from the Snes9x copyright holders. Some bundled upstream components have additional licenses described in the upstream tree. This is a technical summary, not legal advice.
+This wrapper uses the same non-commercial [Snes9x License](LICENSE) as the core. Its license information and copyright notice must accompany every copy and derived work; commercial users must obtain permission from the Snes9x copyright holders. The compiled NTSC filter's separate terms are copied to [LICENSES/snes_ntsc-license.txt](LICENSES/snes_ntsc-license.txt). This is a technical summary, not legal advice.

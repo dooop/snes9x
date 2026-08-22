@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Dominic Opitz
+// SPDX-License-Identifier: LicenseRef-Snes9x
+
 import SwiftUI
 
 public struct SNESView: View {
@@ -74,7 +77,9 @@ public struct SNESView: View {
             )
             .foregroundStyle(.white)
         default:
-            Text("SNES").font(.largeTitle.bold()).foregroundStyle(.secondary)
+            Text(controllerConfiguration.resolvedControllerLabel)
+                .font(.largeTitle.bold())
+                .foregroundStyle(.secondary)
         }
     }
 }

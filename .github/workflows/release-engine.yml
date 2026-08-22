@@ -98,11 +98,9 @@ jobs:
         env:
           TAG: ${{ inputs.tag }}
         run: |
-          SOURCE_ROOT="dist/snes-${TAG}-source"
-          mkdir -p "$SOURCE_ROOT/snes9x"
-          git archive HEAD | tar -x -C "$SOURCE_ROOT"
-          git -C snes9x archive HEAD | tar -x -C "$SOURCE_ROOT/snes9x"
-          tar -czf "dist/snes-${TAG}-source.tar.gz" -C dist "snes-${TAG}-source"
+          scripts/package-source-archive.sh \
+            "dist/snes-${TAG}-source.tar.gz" \
+            "snes-${TAG}-source"
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
