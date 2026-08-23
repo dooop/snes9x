@@ -70,17 +70,44 @@ if [ -z "$OBJECT" ]; then
     exit 1
 fi
 
-rm -rf "$OUTPUT_DIR"
-mkdir -p "$OUTPUT_DIR/Headers"
-xcrun libtool -static -o "$OUTPUT_DIR/libCSnes9xCore.a" "$OBJECT"
-xcrun strip -S "$OUTPUT_DIR/libCSnes9xCore.a"
-cp swift/Sources/Snes9xCoreBridge/include/snes9x_engine.h "$OUTPUT_DIR/Headers/"
+FRAMEWORK="$OUTPUT_DIR/CSnes9xCore.framework"
 
-cat > "$OUTPUT_DIR/Headers/module.modulemap" <<'EOF'
-module CSnes9xCore {
-    header "snes9x_engine.h"
+rm -rf "$OUTPUT_DIR"
+mkdir -p "$FRAMEWORK/Headers" "$FRAMEWORK/Modules"
+xcrun libtool -static -o "$FRAMEWORK/CSnes9xCore" "$OBJECT"
+xcrun strip -S "$FRAMEWORK/CSnes9xCore"
+cp swift/Sources/Snes9xCoreBridge/include/snes9x_engine.h "$FRAMEWORK/Headers/"
+
+cat > "$FRAMEWORK/Modules/module.modulemap" <<'EOF'
+framework module CSnes9xCore {
+    umbrella header "snes9x_engine.h"
     export *
 }
 EOF
 
-echo "Built $SLICE_ID: $(lipo -archs "$OUTPUT_DIR/libCSnes9xCore.a")"
+cat > "$FRAMEWORK/Info.plist" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>CSnes9xCore</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.dooop.snes9x.CSnes9xCore</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>CSnes9xCore</string>
+    <key>CFBundlePackageType</key>
+    <string>FMWK</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+</dict>
+</plist>
+EOF
+
+echo "Built $SLICE_ID: $(lipo -archs "$FRAMEWORK/CSnes9xCore")"

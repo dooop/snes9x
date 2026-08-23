@@ -27,15 +27,25 @@ for slice in \
     tvos-arm64 \
     tvos-arm64_x86_64-simulator \
     macos-arm64_x86_64; do
-    library="$SLICES_DIR/$slice/libCSnes9xCore.a"
-    headers="$SLICES_DIR/$slice/Headers"
-    test -f "$library" || { echo "Missing slice library: $library" >&2; exit 1; }
-    test -f "$headers/snes9x_engine.h" || { echo "Missing headers: $headers" >&2; exit 1; }
-    ARGS+=(-library "$library" -headers "$headers")
+    framework="$SLICES_DIR/$slice/CSnes9xCore.framework"
+    test -f "$framework/CSnes9xCore" || { echo "Missing slice framework: $framework" >&2; exit 1; }
+    test -f "$framework/Headers/snes9x_engine.h" || { echo "Missing framework headers: $framework" >&2; exit 1; }
+    test -f "$framework/Modules/module.modulemap" || { echo "Missing framework module map: $framework" >&2; exit 1; }
+    ARGS+=(-framework "$framework")
 done
 
 rm -rf "$OUTPUT_DIR/CSnes9xCore.xcframework" "$OUTPUT_DIR/CSnes9xCore.xcframework.zip"
 xcodebuild -create-xcframework "${ARGS[@]}" -output "$OUTPUT_DIR/CSnes9xCore.xcframework"
+
+if find "$OUTPUT_DIR/CSnes9xCore.xcframework" -path '*/Headers/module.modulemap' -print -quit | grep -q .; then
+    echo "Framework module maps must not be placed in Headers; that collides with other binary packages." >&2
+    exit 1
+fi
+MODULE_MAP_COUNT="$(find "$OUTPUT_DIR/CSnes9xCore.xcframework" -path '*/CSnes9xCore.framework/Modules/module.modulemap' | wc -l | tr -d ' ')"
+test "$MODULE_MAP_COUNT" -eq 5 || {
+    echo "Expected 5 namespaced framework module maps, found $MODULE_MAP_COUNT." >&2
+    exit 1
+}
 
 {
     echo "snes9x prebuilt CSnes9xCore"

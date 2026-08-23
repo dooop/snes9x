@@ -42,7 +42,7 @@ SNES9X_BUILD_FROM_SOURCE=1 xcodebuild -scheme snes9x -destination 'generic/platf
 The public `Snes9x` target is always built from source. `CSnes9xCore` supports two package modes:
 
 - Source mode compiles the bridge and pinned `snes9x/` submodule when `SNES9X_BUILD_FROM_SOURCE=1` is set. It is also the fallback until `Package.swift` contains a real binary checksum.
-- Binary mode downloads the pinned `CSnes9xCore.xcframework.zip`, or consumes a local artifact from `SNES9X_ENGINE_ARTIFACTS_DIR`.
+- Binary mode downloads the pinned framework-based `CSnes9xCore.xcframework.zip`, or consumes a local artifact from `SNES9X_ENGINE_ARTIFACTS_DIR`. Its module map is namespaced inside `CSnes9xCore.framework/Modules`, so it can coexist with other static binary packages in one app.
 
 `Snes9x` starts on appearance and stops on disappearance. `Snes9xView(engine:)` and `Snes9xEngine` provide explicit lifecycle, save-state, reset, cheat, and custom-control access. Apple game controllers and keyboards map D-pad, A/B/X/Y, L/R, Start, and Select for up to two players. Connecting an external controller hides touch controls; tvOS requests a controller instead of showing touch input.
 
