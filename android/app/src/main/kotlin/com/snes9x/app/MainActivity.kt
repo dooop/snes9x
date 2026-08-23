@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
                     val selectedROM = romURI
                     if (selectedROM == null) {
                         Button(onClick = { picker.launch(arrayOf("application/octet-stream", "*/*")) }) {
-                            Text("Spieldatei öffnen")
+                            Text("Open game file")
                         }
                     } else {
                         Snes9x(

@@ -73,7 +73,7 @@ public struct Snes9xView: View {
             ProgressView().tint(.white)
         case .failed(let message):
             ContentUnavailableView(
-                "ROM konnte nicht gestartet werden", systemImage: "exclamationmark.triangle", description: Text(message)
+                "ROM could not be started", systemImage: "exclamationmark.triangle", description: Text(message)
             )
             .foregroundStyle(.white)
         default:

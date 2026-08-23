@@ -5,6 +5,7 @@ import SwiftUI
 
 /// High-level SwiftUI host for one Snes9x ROM.
 public struct Snes9x: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var engine: Snes9xEngine
     private let configuration: Snes9xConfiguration
     private let controllerConfiguration: Snes9xControllerConfiguration
@@ -36,6 +37,16 @@ public struct Snes9x: View {
         )
         .onAppear {
             if configuration.automaticallyStarts { engine.start() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .active:
+                engine.resume()
+            case .inactive, .background:
+                engine.pause()
+            @unknown default:
+                engine.pause()
+            }
         }
         .onDisappear { engine.stop() }
     }

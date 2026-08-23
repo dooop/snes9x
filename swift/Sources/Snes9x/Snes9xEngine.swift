@@ -47,7 +47,7 @@ public final class Snes9xEngine: ObservableObject {
         Self.claimLock.lock()
         guard !Self.engineClaimed else {
             Self.claimLock.unlock()
-            state = .failed("In diesem Prozess läuft bereits eine Snes9x-Engine.")
+            state = .failed("A Snes9x engine is already running in this process.")
             return
         }
         Self.engineClaimed = true
@@ -61,7 +61,7 @@ public final class Snes9xEngine: ObservableObject {
             self.securityScopedROM = configuration.romURL.startAccessingSecurityScopedResource()
             let systemDirectory = configuration.romURL.deletingLastPathComponent().path
             guard let core = snes9x_engine_create(systemDirectory) else {
-                self.fail("Snes9x konnte nicht initialisiert werden oder wird bereits verwendet.")
+                self.fail("Snes9x could not be initialized or is already in use.")
                 return
             }
             self.core = core
@@ -77,7 +77,7 @@ public final class Snes9xEngine: ObservableObject {
                     return
                 }
             } catch {
-                self.fail("Die ROM- oder Speicherdatei konnte nicht vorbereitet werden: \(error.localizedDescription)")
+                self.fail("The ROM or save file could not be prepared: \(error.localizedDescription)")
                 return
             }
 

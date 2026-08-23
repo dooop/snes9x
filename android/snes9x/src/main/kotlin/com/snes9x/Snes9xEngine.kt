@@ -42,7 +42,7 @@ class Snes9xEngine(
     fun start() {
         if (_state.value !is Snes9xState.Idle && _state.value !is Snes9xState.Stopped) return
         if (!engineClaimed.compareAndSet(false, true)) {
-            _state.value = Snes9xState.Failed("In diesem Prozess läuft bereits eine Snes9x-Engine.")
+            _state.value = Snes9xState.Failed("A Snes9x engine is already running in this process.")
             return
         }
         ownsClaim = true
@@ -119,7 +119,7 @@ class Snes9xEngine(
             synchronized(nativeLock) {
                 if (stopped) return
                 handle = NativeSnes9x.create(runtimeDirectory.path)
-                check(handle != 0L) { "Snes9x konnte nicht initialisiert werden oder wird bereits verwendet." }
+                check(handle != 0L) { "Snes9x could not be initialized or is already in use." }
                 check(NativeSnes9x.loadROM(handle, stagedROM.path, save.path)) { NativeSnes9x.lastError(handle) }
                 audioTrack = createAudioTrack().also(AudioTrack::play)
             }
@@ -132,7 +132,7 @@ class Snes9xEngine(
                 stopped = true
                 synchronized(nativeLock) { releaseNative() }
                 releaseClaim()
-                _state.value = Snes9xState.Failed(error.message ?: "Unbekannter Snes9x-Fehler")
+                _state.value = Snes9xState.Failed(error.message ?: "Unknown Snes9x error")
             }
         }
     }
@@ -140,7 +140,7 @@ class Snes9xEngine(
     private fun copyROMAndDigest(destination: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
         appContext.contentResolver.openInputStream(configuration.romUri).use { input ->
-            requireNotNull(input) { "Die ROM-Datei konnte nicht geöffnet werden." }
+            requireNotNull(input) { "The ROM file could not be opened." }
             destination.outputStream().use { output ->
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                 while (true) {
