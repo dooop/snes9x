@@ -73,19 +73,40 @@ fi
 FRAMEWORK="$OUTPUT_DIR/CSnes9xCore.framework"
 
 rm -rf "$OUTPUT_DIR"
-mkdir -p "$FRAMEWORK/Headers" "$FRAMEWORK/Modules"
-xcrun libtool -static -o "$FRAMEWORK/CSnes9xCore" "$OBJECT"
-xcrun strip -S "$FRAMEWORK/CSnes9xCore"
-cp swift/Sources/Snes9xCoreBridge/include/snes9x_engine.h "$FRAMEWORK/Headers/"
+if [ "$SLICE_ID" = "macos-arm64_x86_64" ]; then
+    FRAMEWORK_CONTENTS="$FRAMEWORK/Versions/A"
+    FRAMEWORK_HEADERS="$FRAMEWORK_CONTENTS/Headers"
+    FRAMEWORK_MODULES="$FRAMEWORK_CONTENTS/Modules"
+    FRAMEWORK_RESOURCES="$FRAMEWORK_CONTENTS/Resources"
+    FRAMEWORK_BINARY="$FRAMEWORK_CONTENTS/CSnes9xCore"
+    FRAMEWORK_PLIST="$FRAMEWORK_RESOURCES/Info.plist"
 
-cat > "$FRAMEWORK/Modules/module.modulemap" <<'EOF'
+    mkdir -p "$FRAMEWORK_HEADERS" "$FRAMEWORK_MODULES" "$FRAMEWORK_RESOURCES"
+    ln -s A "$FRAMEWORK/Versions/Current"
+    ln -s Versions/Current/CSnes9xCore "$FRAMEWORK/CSnes9xCore"
+    ln -s Versions/Current/Headers "$FRAMEWORK/Headers"
+    ln -s Versions/Current/Modules "$FRAMEWORK/Modules"
+    ln -s Versions/Current/Resources "$FRAMEWORK/Resources"
+else
+    FRAMEWORK_HEADERS="$FRAMEWORK/Headers"
+    FRAMEWORK_MODULES="$FRAMEWORK/Modules"
+    FRAMEWORK_BINARY="$FRAMEWORK/CSnes9xCore"
+    FRAMEWORK_PLIST="$FRAMEWORK/Info.plist"
+    mkdir -p "$FRAMEWORK_HEADERS" "$FRAMEWORK_MODULES"
+fi
+
+xcrun libtool -static -o "$FRAMEWORK_BINARY" "$OBJECT"
+xcrun strip -S "$FRAMEWORK_BINARY"
+cp swift/Sources/Snes9xCoreBridge/include/snes9x_engine.h "$FRAMEWORK_HEADERS/"
+
+cat > "$FRAMEWORK_MODULES/module.modulemap" <<'EOF'
 framework module CSnes9xCore {
     umbrella header "snes9x_engine.h"
     export *
 }
 EOF
 
-cat > "$FRAMEWORK/Info.plist" <<'EOF'
+cat > "$FRAMEWORK_PLIST" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -110,4 +131,4 @@ cat > "$FRAMEWORK/Info.plist" <<'EOF'
 </plist>
 EOF
 
-echo "Built $SLICE_ID: $(lipo -archs "$FRAMEWORK/CSnes9xCore")"
+echo "Built $SLICE_ID: $(lipo -archs "$FRAMEWORK_BINARY")"

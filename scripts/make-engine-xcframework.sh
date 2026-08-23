@@ -41,9 +41,26 @@ if find "$OUTPUT_DIR/CSnes9xCore.xcframework" -path '*/Headers/module.modulemap'
     echo "Framework module maps must not be placed in Headers; that collides with other binary packages." >&2
     exit 1
 fi
-MODULE_MAP_COUNT="$(find "$OUTPUT_DIR/CSnes9xCore.xcframework" -path '*/CSnes9xCore.framework/Modules/module.modulemap' | wc -l | tr -d ' ')"
-test "$MODULE_MAP_COUNT" -eq 5 || {
-    echo "Expected 5 namespaced framework module maps, found $MODULE_MAP_COUNT." >&2
+for slice in \
+    ios-arm64 \
+    ios-arm64_x86_64-simulator \
+    tvos-arm64 \
+    tvos-arm64_x86_64-simulator \
+    macos-arm64_x86_64; do
+    framework="$OUTPUT_DIR/CSnes9xCore.xcframework/$slice/CSnes9xCore.framework"
+    test -f "$framework/Modules/module.modulemap" || {
+        echo "XCFramework slice has no namespaced module map: $framework" >&2
+        exit 1
+    }
+done
+
+MACOS_FRAMEWORK="$OUTPUT_DIR/CSnes9xCore.xcframework/macos-arm64_x86_64/CSnes9xCore.framework"
+test -f "$MACOS_FRAMEWORK/Versions/Current/Resources/Info.plist" || {
+    echo "The macOS framework must use a versioned bundle layout." >&2
+    exit 1
+}
+test ! -e "$MACOS_FRAMEWORK/Info.plist" || {
+    echo "The macOS framework must not use a shallow Info.plist." >&2
     exit 1
 }
 
