@@ -4,35 +4,37 @@ plugins {
     alias(libs.plugins.ktlint)
 }
 
+base { archivesName.set("snes9x") }
+
 ktlint {
     android.set(true)
     outputToConsole.set(true)
 }
 
 val releaseAar =
-    providers.gradleProperty("snes.releaseAar").orElse(
+    providers.gradleProperty("snes9x.releaseAar").orElse(
         layout.projectDirectory
-            .file("libs/snes-release.aar")
+            .file("libs/snes9x-release.aar")
             .asFile.absolutePath,
     )
 
-val mavenVersion = providers.gradleProperty("snes.mavenVersion").getOrElse("0.0.0")
+val mavenVersion = providers.gradleProperty("snes9x.mavenVersion").getOrElse("0.0.0")
 
 val configuredAbis =
     providers
-        .gradleProperty("snes.abis")
+        .gradleProperty("snes9x.abis")
         .getOrElse("arm64-v8a,x86_64")
         .split(",")
         .map(String::trim)
         .filter(String::isNotEmpty)
 
 android {
-    namespace = "snes9x.app"
+    namespace = "com.snes9x.app"
     compileSdk { version = release(37) }
     enableKotlin = true
 
     defaultConfig {
-        applicationId = "snes9x.app"
+        applicationId = "com.snes9x"
         minSdk = 23
         targetSdk = 37
         versionCode = 1
@@ -53,12 +55,11 @@ android {
         create("maven") {
             dimension = "engineSource"
             versionNameSuffix = "-maven"
-            buildConfigField("String", "ENGINE_SOURCE", "\"maven:io.github.dooop:snes:$mavenVersion\"")
+            buildConfigField("String", "ENGINE_SOURCE", "\"maven:io.github.dooop:snes9x:$mavenVersion\"")
         }
     }
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }
         release {
@@ -78,7 +79,7 @@ android {
 
 dependencies {
     //noinspection UseTomlInstead -- the version is intentionally supplied as a release property.
-    "mavenImplementation"("io.github.dooop:snes:$mavenVersion")
+    "mavenImplementation"("io.github.dooop:snes9x:$mavenVersion")
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)
@@ -89,7 +90,7 @@ dependencies {
 
 afterEvaluate {
     dependencies {
-        "localDebugImplementation"(project(":snes"))
+        "localDebugImplementation"(project(":snes9x"))
         "localReleaseImplementation"(files(releaseAar))
     }
 }
@@ -102,7 +103,7 @@ val verifyReleaseAar =
             val aar = file(releaseAar.get())
             require(aar.isFile) {
                 "The local release build requires a prebuilt snes9x AAR at ${aar.path}. " +
-                    "Pass -Psnes.releaseAar=/absolute/path/to/snes-release.aar."
+                    "Pass -Psnes9x.releaseAar=/absolute/path/to/snes9x-release.aar."
             }
         }
     }

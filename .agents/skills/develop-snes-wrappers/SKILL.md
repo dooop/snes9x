@@ -3,15 +3,15 @@ name: develop-snes-wrappers
 description: Safely implements and reviews features, fixes, and refactors in the shared Snes9x C++ bridge, SwiftUI Apple wrapper, Android Compose wrapper, or JNI layer. Use for emulator lifecycle, ROM loading, audio/video frames, controls, save data, save states, cheats, platform API parity, or native boundary changes in this repository. Do not use for validation-only or release-check tasks.
 ---
 
-# Develop SNES wrappers
+# Develop Snes9x wrappers
 
 Follow `AGENTS.md` before applying this workflow.
 
 ## Locate the responsibility
 
 1. Inspect `git status --short` and the directly affected code.
-2. Put emulator behavior and shared state in `swift/Sources/SNESCoreBridge/`.
-3. Put only marshaling and buffer conversion in `android/snes/src/main/cpp/snes_jni.cpp`.
+2. Put emulator behavior and shared state in `swift/Sources/Snes9xCoreBridge/`.
+3. Put only marshaling and buffer conversion in `android/snes9x/src/main/cpp/snes9x_jni.cpp`.
 4. Put lifecycle, storage access, presentation, audio output, and input adapters in the platform library.
 5. Keep sample behavior in `android/app/`.
 6. Never modify `snes9x/`; adapt through its public API.
@@ -21,9 +21,9 @@ Follow `AGENTS.md` before applying this workflow.
 For a shared capability, audit this chain:
 
 ```text
-snes_engine.h <-> snes_engine.cpp
-    |-> Swift SNESEngine -> SwiftUI/public Apple API
-    `-> JNI -> NativeSNES -> Kotlin SNESEngine -> Compose/public Android API
+snes9x_engine.h <-> snes9x_engine.cpp
+    |-> Swift Snes9xEngine -> SwiftUI/public Apple API
+    `-> JNI -> NativeSnes9x -> Kotlin Snes9xEngine -> Compose/public Android API
 ```
 
 Keep button masks, dimensions, sample formats, state semantics, errors, and persistent-data behavior aligned. If parity is intentionally impossible, document the platform difference.

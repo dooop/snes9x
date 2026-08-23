@@ -18,7 +18,7 @@ permissions:
 
 env:
   NDK_VERSION: "29.0.14206865"
-  SNES_ABIS: "arm64-v8a,x86_64"
+  SNES9X_ABIS: "arm64-v8a,x86_64"
 
 jobs:
   publish:
@@ -50,54 +50,54 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - name: Build release AAR
         run: |
-          ./gradlew --no-daemon :snes:assembleRelease \
-            -Psnes.abis="${SNES_ABIS}" \
-            -Psnes.version="${{ inputs.version }}"
+          ./gradlew --no-daemon :snes9x:assembleRelease \
+            -Psnes9x.abis="${SNES9X_ABIS}" \
+            -Psnes9x.version="${{ inputs.version }}"
       - name: Build sample from release AAR
         run: |
           ./gradlew --no-daemon :app:assembleLocalRelease \
-            -Psnes.releaseAar="${GITHUB_WORKSPACE}/android/snes/build/outputs/aar/snes-release.aar" \
-            -Psnes.abis="${SNES_ABIS}"
+            -Psnes9x.releaseAar="${GITHUB_WORKSPACE}/android/snes9x/build/outputs/aar/snes9x-release.aar" \
+            -Psnes9x.abis="${SNES9X_ABIS}"
       - name: Verify release artifacts
         run: |
           scripts/verify-release-artifacts.sh \
-            android/snes/build/outputs/aar/snes-release.aar \
-            android/app/build/outputs/apk/local/release/app-local-release-unsigned.apk \
-            "${SNES_ABIS}"
+            android/snes9x/build/outputs/aar/snes9x-release.aar \
+            android/app/build/outputs/apk/local/release/snes9x-local-release-unsigned.apk \
+            "${SNES9X_ABIS}"
       - name: Bundle complete source
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          SOURCE_ARCHIVE="${GITHUB_WORKSPACE}/android/snes/build/distributions/snes-${VERSION}-complete-source.tar.gz"
-          scripts/package-source-archive.sh "$SOURCE_ARCHIVE" "snes-${VERSION}-source"
-          echo "SNES_COMPLETE_SOURCE_ARCHIVE=${SOURCE_ARCHIVE}" >> "$GITHUB_ENV"
+          SOURCE_ARCHIVE="${GITHUB_WORKSPACE}/android/snes9x/build/distributions/snes9x-${VERSION}-complete-source.tar.gz"
+          scripts/package-source-archive.sh "$SOURCE_ARCHIVE" "snes9x-${VERSION}-source"
+          echo "SNES9X_COMPLETE_SOURCE_ARCHIVE=${SOURCE_ARCHIVE}" >> "$GITHUB_ENV"
       - name: Publish to GitHub Packages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ./gradlew --no-daemon :snes:publishReleasePublicationToGitHubPackagesRepository \
-            -Psnes.abis="${SNES_ABIS}" \
-            -Psnes.version="${{ inputs.version }}" \
-            -Psnes.completeSourceArchive="${SNES_COMPLETE_SOURCE_ARCHIVE}" \
-            -Psnes.githubRepository="${GITHUB_REPOSITORY}"
+          ./gradlew --no-daemon :snes9x:publishReleasePublicationToGitHubPackagesRepository \
+            -Psnes9x.abis="${SNES9X_ABIS}" \
+            -Psnes9x.version="${{ inputs.version }}" \
+            -Psnes9x.completeSourceArchive="${SNES9X_COMPLETE_SOURCE_ARCHIVE}" \
+            -Psnes9x.githubRepository="${GITHUB_REPOSITORY}"
       - name: Write provenance
         run: |
           {
-            echo "coordinates=io.github.dooop:snes:${{ inputs.version }}"
+            echo "coordinates=io.github.dooop:snes9x:${{ inputs.version }}"
             echo "repository=${GITHUB_REPOSITORY}"
             echo "wrapper_commit=${GITHUB_SHA}"
             echo "upstream_commit=$(git -C snes9x rev-parse HEAD)"
-            echo "abis=${SNES_ABIS}"
+            echo "abis=${SNES9X_ABIS}"
             echo "ndk=${NDK_VERSION}"
           } > android-release-provenance.txt
       - uses: actions/upload-artifact@v7
         with:
-          name: snes-android-${{ inputs.version }}
+          name: snes9x-android-${{ inputs.version }}
           path: |
-            android/snes/build/outputs/aar/snes-release.aar
-            android/snes/build/publications/release/pom-default.xml
-            android/snes/build/intermediates/source_jar/release/release-sources.jar
-            android/snes/build/distributions/snes-${{ inputs.version }}-complete-source.tar.gz
-            android/app/build/outputs/apk/local/release/app-local-release-unsigned.apk
+            android/snes9x/build/outputs/aar/snes9x-release.aar
+            android/snes9x/build/publications/release/pom-default.xml
+            android/snes9x/build/intermediates/source_jar/release/release-sources.jar
+            android/snes9x/build/distributions/snes9x-${{ inputs.version }}-complete-source.tar.gz
+            android/app/build/outputs/apk/local/release/snes9x-local-release-unsigned.apk
             android-release-provenance.txt
           if-no-files-found: error

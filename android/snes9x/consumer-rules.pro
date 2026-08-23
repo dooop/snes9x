@@ -1,0 +1,1 @@
+-keep class com.snes9x.internal.NativeSnes9x { *; }

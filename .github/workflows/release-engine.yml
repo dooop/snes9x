@@ -76,7 +76,7 @@ jobs:
           scripts/make-engine-xcframework.sh slices dist
       - name: Validate local binary artifact
         env:
-          SNES_ENGINE_ARTIFACTS_DIR: dist
+          SNES9X_ENGINE_ARTIFACTS_DIR: dist
         run: |
           swift package reset
           for entry in \
@@ -88,7 +88,7 @@ jobs:
             platform="${entry%%|*}"
             key="${entry#*|}"
             xcodebuild build \
-              -scheme snes \
+              -scheme snes9x \
               -destination "generic/platform=${platform}" \
               -derivedDataPath ".build/binary-validation-${key}" \
               CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
@@ -99,8 +99,8 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           scripts/package-source-archive.sh \
-            "dist/snes-${TAG}-source.tar.gz" \
-            "snes-${TAG}-source"
+            "dist/snes9x-${TAG}-source.tar.gz" \
+            "snes9x-${TAG}-source"
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -109,7 +109,7 @@ jobs:
           CHECKSUM="$(cat dist/checksum.txt)"
           UPSTREAM="$(git -C snes9x rev-parse HEAD)"
           {
-            echo "Prebuilt Snes9x CSNESCore for snes."
+            echo "Prebuilt Snes9x CSnes9xCore for snes9x."
             echo
             echo "Upstream commit: ${UPSTREAM}"
             echo "Slices: iOS, iOS Simulator, tvOS, tvOS Simulator, and macOS."
@@ -117,7 +117,7 @@ jobs:
             echo "Package.swift checksum: ${CHECKSUM}"
           } > release-notes.md
           gh release create "$TAG" --draft --title "$TAG" --notes-file release-notes.md \
-            dist/CSNESCore.xcframework.zip dist/SOURCES.txt "dist/snes-${TAG}-source.tar.gz"
+            dist/CSnes9xCore.xcframework.zip dist/SOURCES.txt "dist/snes9x-${TAG}-source.tar.gz"
       - name: Bump Package.swift
         if: inputs.bump_manifest
         env:

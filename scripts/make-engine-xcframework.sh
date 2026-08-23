@@ -27,18 +27,18 @@ for slice in \
     tvos-arm64 \
     tvos-arm64_x86_64-simulator \
     macos-arm64_x86_64; do
-    library="$SLICES_DIR/$slice/libCSNESCore.a"
+    library="$SLICES_DIR/$slice/libCSnes9xCore.a"
     headers="$SLICES_DIR/$slice/Headers"
     test -f "$library" || { echo "Missing slice library: $library" >&2; exit 1; }
-    test -f "$headers/snes_engine.h" || { echo "Missing headers: $headers" >&2; exit 1; }
+    test -f "$headers/snes9x_engine.h" || { echo "Missing headers: $headers" >&2; exit 1; }
     ARGS+=(-library "$library" -headers "$headers")
 done
 
-rm -rf "$OUTPUT_DIR/CSNESCore.xcframework" "$OUTPUT_DIR/CSNESCore.xcframework.zip"
-xcodebuild -create-xcframework "${ARGS[@]}" -output "$OUTPUT_DIR/CSNESCore.xcframework"
+rm -rf "$OUTPUT_DIR/CSnes9xCore.xcframework" "$OUTPUT_DIR/CSnes9xCore.xcframework.zip"
+xcodebuild -create-xcframework "${ARGS[@]}" -output "$OUTPUT_DIR/CSnes9xCore.xcframework"
 
 {
-    echo "snes prebuilt CSNESCore"
+    echo "snes9x prebuilt CSnes9xCore"
     echo
     echo "wrapper commit:  $(git -C "$REPO_ROOT" rev-parse HEAD)"
     echo "upstream commit: $(git -C "$REPO_ROOT/snes9x" rev-parse HEAD)"
@@ -48,23 +48,23 @@ xcodebuild -create-xcframework "${ARGS[@]}" -output "$OUTPUT_DIR/CSNESCore.xcfra
     echo "Commercial distribution requires permission from the Snes9x copyright holders."
 } > "$OUTPUT_DIR/SOURCES.txt"
 
-mkdir -p "$OUTPUT_DIR/CSNESCore.xcframework/LICENSES"
-cp "$REPO_ROOT/LICENSE" "$OUTPUT_DIR/CSNESCore.xcframework/LICENSE"
+mkdir -p "$OUTPUT_DIR/CSnes9xCore.xcframework/LICENSES"
+cp "$REPO_ROOT/LICENSE" "$OUTPUT_DIR/CSnes9xCore.xcframework/LICENSE"
 cp "$REPO_ROOT/LICENSES/snes_ntsc-license.txt" \
-    "$OUTPUT_DIR/CSNESCore.xcframework/LICENSES/snes_ntsc-license.txt"
-cp "$OUTPUT_DIR/SOURCES.txt" "$OUTPUT_DIR/CSNESCore.xcframework/SOURCES.txt"
+    "$OUTPUT_DIR/CSnes9xCore.xcframework/LICENSES/snes_ntsc-license.txt"
+cp "$OUTPUT_DIR/SOURCES.txt" "$OUTPUT_DIR/CSnes9xCore.xcframework/SOURCES.txt"
 
 (
     cd "$OUTPUT_DIR"
-    ditto -c -k --sequesterRsrc --keepParent CSNESCore.xcframework CSNESCore.xcframework.zip
+    ditto -c -k --sequesterRsrc --keepParent CSnes9xCore.xcframework CSnes9xCore.xcframework.zip
 )
-unzip -p "$OUTPUT_DIR/CSNESCore.xcframework.zip" CSNESCore.xcframework/LICENSE | cmp "$REPO_ROOT/LICENSE" -
-unzip -p "$OUTPUT_DIR/CSNESCore.xcframework.zip" \
-    CSNESCore.xcframework/LICENSES/snes_ntsc-license.txt | cmp "$REPO_ROOT/LICENSES/snes_ntsc-license.txt" -
+unzip -p "$OUTPUT_DIR/CSnes9xCore.xcframework.zip" CSnes9xCore.xcframework/LICENSE | cmp "$REPO_ROOT/LICENSE" -
+unzip -p "$OUTPUT_DIR/CSnes9xCore.xcframework.zip" \
+    CSnes9xCore.xcframework/LICENSES/snes_ntsc-license.txt | cmp "$REPO_ROOT/LICENSES/snes_ntsc-license.txt" -
 
-export SNES_BUILD_FROM_SOURCE=1
+export SNES9X_BUILD_FROM_SOURCE=1
 swift package --package-path "$REPO_ROOT" compute-checksum \
-    "$OUTPUT_DIR/CSNESCore.xcframework.zip" > "$OUTPUT_DIR/checksum.txt"
+    "$OUTPUT_DIR/CSnes9xCore.xcframework.zip" > "$OUTPUT_DIR/checksum.txt"
 
-echo "Created CSNESCore.xcframework.zip"
+echo "Created CSnes9xCore.xcframework.zip"
 echo "Checksum: $(cat "$OUTPUT_DIR/checksum.txt")"

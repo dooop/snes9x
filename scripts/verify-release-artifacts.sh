@@ -39,11 +39,11 @@ fi
 
 CLASSES="$(jar tf "$WORK_DIR/aar/classes.jar")"
 for class in \
-    snes9x/SNESKt.class \
-    snes9x/SNESConfiguration.class \
-    snes9x/SNESEngine.class \
-    snes9x/SNESViewKt.class \
-    snes9x/internal/NativeSNES.class; do
+    com/snes9x/Snes9xKt.class \
+    com/snes9x/Snes9xConfiguration.class \
+    com/snes9x/Snes9xEngine.class \
+    com/snes9x/Snes9xViewKt.class \
+    com/snes9x/internal/NativeSnes9x.class; do
     grep -qx "$class" <<< "$CLASSES" || { echo "Missing class: $class" >&2; exit 1; }
 done
 
@@ -60,14 +60,14 @@ fi
 test -x "$READELF" || { echo "Set READELF or ANDROID_NDK_ROOT." >&2; exit 1; }
 
 for abi in "${ABIS[@]}"; do
-    require_file "$WORK_DIR/aar/jni/$abi/libsnes.so"
-    require_file "$WORK_DIR/apk/lib/$abi/libsnes.so"
+    require_file "$WORK_DIR/aar/jni/$abi/libsnes9x.so"
+    require_file "$WORK_DIR/apk/lib/$abi/libsnes9x.so"
     while read -r alignment; do
         test "$((alignment))" -ge "$((0x4000))" || {
-            echo "libsnes.so for $abi has LOAD alignment $alignment; 0x4000 is required." >&2
+            echo "libsnes9x.so for $abi has LOAD alignment $alignment; 0x4000 is required." >&2
             exit 1
         }
-    done < <("$READELF" -lW "$WORK_DIR/aar/jni/$abi/libsnes.so" | awk '$1 == "LOAD" { print $NF }')
+    done < <("$READELF" -lW "$WORK_DIR/aar/jni/$abi/libsnes9x.so" | awk '$1 == "LOAD" { print $NF }')
 done
 
 echo "Verified AAR, APK, licenses, Kotlin/JNI API, ABIs, and 16 KB alignment."

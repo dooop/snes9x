@@ -35,7 +35,7 @@ jobs:
           git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
           CHANGED="$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD)"
           echo "$CHANGED"
-          if echo "$CHANGED" | grep -qE '^(Package\.swift|LICENSE$|LICENSES/|snes9x$|swift/Sources/SNESCoreBridge/|scripts/(build-engine-slice|make-engine-xcframework)\.sh|\.gitmodules)'; then
+          if echo "$CHANGED" | grep -qE '^(Package\.swift|LICENSE$|LICENSES/|snes9x$|swift/Sources/Snes9xCoreBridge/|scripts/(build-engine-slice|make-engine-xcframework)\.sh|\.gitmodules)'; then
             echo "engine=true" >> "$GITHUB_OUTPUT"
           else
             echo "engine=false" >> "$GITHUB_OUTPUT"
@@ -88,7 +88,7 @@ jobs:
             key: tvos
             destination: "generic/platform=tvOS"
     env:
-      SNES_BUILD_FROM_SOURCE: "1"
+      SNES9X_BUILD_FROM_SOURCE: "1"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -102,7 +102,7 @@ jobs:
         if: matrix.key != 'macos'
         run: |
           xcodebuild build \
-            -scheme snes \
+            -scheme snes9x \
             -destination "${{ matrix.destination }}" \
             -derivedDataPath ".build/source-${{ matrix.key }}" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
@@ -132,16 +132,16 @@ jobs:
         id: guard
         run: |
           if grep -q 'engineChecksum = "0\{64\}"' Package.swift; then
-            echo "::notice::No prebuilt CSNESCore release is referenced yet."
+            echo "::notice::No prebuilt CSnes9xCore release is referenced yet."
             echo "ready=false" >> "$GITHUB_OUTPUT"
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
-      - name: Build against precompiled CSNESCore
+      - name: Build against precompiled CSnes9xCore
         if: steps.guard.outputs.ready == 'true'
         run: |
           xcodebuild build \
-            -scheme snes \
+            -scheme snes9x \
             -destination "${{ matrix.destination }}" \
             -derivedDataPath ".build/binary-${{ matrix.key }}" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
@@ -154,7 +154,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      SNES_ABIS: "arm64-v8a"
+      SNES9X_ABIS: "arm64-v8a"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -171,25 +171,25 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - name: Build library and project-linked sample
         run: |
-          ./gradlew --no-daemon :snes:testDebugUnitTest :snes:assembleRelease :app:assembleLocalDebug \
-            -Psnes.abis="${SNES_ABIS}"
+          ./gradlew --no-daemon :snes9x:testDebugUnitTest :snes9x:assembleRelease :app:assembleLocalDebug \
+            -Psnes9x.abis="${SNES9X_ABIS}"
       - name: Build sample from the prebuilt AAR
         run: |
           ./gradlew --no-daemon :app:assembleLocalRelease \
-            -Psnes.releaseAar="${GITHUB_WORKSPACE}/android/snes/build/outputs/aar/snes-release.aar" \
-            -Psnes.abis="${SNES_ABIS}"
+            -Psnes9x.releaseAar="${GITHUB_WORKSPACE}/android/snes9x/build/outputs/aar/snes9x-release.aar" \
+            -Psnes9x.abis="${SNES9X_ABIS}"
       - name: Run Android lint
-        run: ./gradlew --no-daemon :snes:lintDebug :app:lintLocalDebug -Psnes.abis="${SNES_ABIS}"
+        run: ./gradlew --no-daemon :snes9x:lintDebug :app:lintLocalDebug -Psnes9x.abis="${SNES9X_ABIS}"
       - name: Verify artifacts
         run: |
           scripts/verify-release-artifacts.sh \
-            android/snes/build/outputs/aar/snes-release.aar \
-            android/app/build/outputs/apk/local/release/app-local-release-unsigned.apk \
-            "${SNES_ABIS}"
+            android/snes9x/build/outputs/aar/snes9x-release.aar \
+            android/app/build/outputs/apk/local/release/snes9x-local-release-unsigned.apk \
+            "${SNES9X_ABIS}"
       - uses: actions/upload-artifact@v7
         with:
-          name: snes-android-artifacts
+          name: snes9x-android-artifacts
           path: |
-            android/snes/build/outputs/aar/snes-release.aar
-            android/app/build/outputs/apk/local/release/app-local-release-unsigned.apk
+            android/snes9x/build/outputs/aar/snes9x-release.aar
+            android/app/build/outputs/apk/local/release/snes9x-local-release-unsigned.apk
           if-no-files-found: error

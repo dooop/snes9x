@@ -13,7 +13,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/dooop/snes")
+            url = uri("https://maven.pkg.github.com/dooop/snes9x")
             credentials {
                 username =
                     providers.gradleProperty("gpr.user")
@@ -28,7 +28,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "snes"
-include(":snes", ":app")
-project(":snes").projectDir = file("android/snes")
+rootProject.name = "snes9x"
+include(":snes9x", ":app")
+project(":snes9x").projectDir = file("android/snes9x")
 project(":app").projectDir = file("android/app")

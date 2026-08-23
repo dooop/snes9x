@@ -3,7 +3,7 @@ name: validate-snes-wrappers
 description: Validates the Snes9x Apple and Android wrappers, triages build and lint output, and checks release hygiene and Snes9x license obligations. Use after code or build changes, before handoff or release, or when asked to test, verify, inspect CI readiness, or audit generated files. Do not use as the primary implementation workflow.
 ---
 
-# Validate SNES wrappers
+# Validate Snes9x wrappers
 
 Run from the repository root. Do not clean or delete the user's existing outputs merely to obtain a clean run.
 
@@ -22,9 +22,9 @@ Choose the full affected matrix; do not claim a platform passed from a different
 swift package dump-package >/dev/null
 swift build
 swift test
-xcodebuild -scheme snes -destination 'generic/platform=iOS' build
-./gradlew :snes:assembleDebug :app:assembleLocalDebug
-./gradlew :snes:lintDebug :app:lintLocalDebug
+xcodebuild -scheme snes9x -destination 'generic/platform=iOS' build
+./gradlew :snes9x:assembleDebug :app:assembleLocalDebug
+./gradlew :snes9x:lintDebug :app:lintLocalDebug
 ```
 
 Use `./scripts/validate.sh` for the repository's shorter combined entry point, but add `swift test`, iOS, and Android lint when their toolchains are available.

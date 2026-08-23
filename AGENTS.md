@@ -9,9 +9,9 @@
 ## Architecture
 
 - `snes9x/`: read-only upstream git submodule.
-- `swift/Sources/SNESCoreBridge/`: portable C ABI and C++ integration shared by both platforms.
-- `swift/Sources/SNES/`: SwiftUI API, Apple lifecycle, video, audio, and controller handling.
-- `android/snes/`: Android library, Compose UI, lifecycle, JNI, and CMake host.
+- `swift/Sources/Snes9xCoreBridge/`: portable C ABI and C++ integration shared by both platforms.
+- `swift/Sources/Snes9x/`: SwiftUI API, Apple lifecycle, video, audio, and controller handling.
+- `android/snes9x/`: Android library, Compose UI, lifecycle, JNI, and CMake host.
 - `android/app/`: sample-only Android application.
 - `swift/Tests/` and Android test source sets: wrapper tests; never put tests in the submodule.
 
@@ -20,7 +20,7 @@
 - Never edit, delete, reformat, patch, or generate files under `snes9x/`.
 - Preserve one engine per process. Snes9x callback managers are global; every success, failure, cancellation, and disposal path must release the process claim exactly once.
 - Serialize all calls that touch a native engine. Do not destroy an engine while frame, audio, input, state, or file callbacks can still use it.
-- Put portable emulator behavior in `swift/Sources/SNESCoreBridge/`, not in JNI or Swift.
+- Put portable emulator behavior in `swift/Sources/Snes9xCoreBridge/`, not in JNI or Swift.
 - Keep platform lifecycle, storage access, rendering, audio output, and controls in their platform layer.
 - Do not commit `.build/`, `.gradle/`, `.kotlin/`, `**/.cxx/`, `**/build/`, `DerivedData/`, APKs, AARs, archives, or local SDK configuration.
 - Do not add ROMs, BIOS images, firmware, copyrighted game assets, secrets, or machine-local paths.
@@ -52,11 +52,11 @@ Run the narrowest relevant checks while iterating, then the full affected platfo
 - Manifest: `swift package dump-package > /dev/null`
 - Apple host: `swift build`
 - Apple tests: `swift test`
-- iOS: `xcodebuild -scheme snes -destination 'generic/platform=iOS' build`
-- Android library: `./gradlew :snes:assembleDebug`
+- iOS: `xcodebuild -scheme snes9x -destination 'generic/platform=iOS' build`
+- Android library: `./gradlew :snes9x:assembleDebug`
 - Android sample from source: `./gradlew :app:assembleLocalDebug`
-- Android sample from AAR: `./gradlew :app:assembleLocalRelease -Psnes.releaseAar=/absolute/path/to/snes-release.aar`
-- Android lint: `./gradlew :snes:lintDebug :app:lintLocalDebug`
+- Android sample from AAR: `./gradlew :app:assembleLocalRelease -Psnes9x.releaseAar=/absolute/path/to/snes9x-release.aar`
+- Android lint: `./gradlew :snes9x:lintDebug :app:lintLocalDebug`
 - Combined local validation: `./scripts/validate.sh`
 
 After validation, run `git status --short` and ensure only intended source/configuration files changed. Generated output must remain ignored and untracked.

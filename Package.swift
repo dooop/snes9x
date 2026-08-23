@@ -2,12 +2,12 @@
 import Foundation
 import PackageDescription
 
-let engineBinaryBaseURL = "https://github.com/dooop/snes/releases/download/0.0.0"
+let engineBinaryBaseURL = "https://github.com/dooop/snes9x/releases/download/0.0.0"
 let engineChecksum = "0000000000000000000000000000000000000000000000000000000000000000"
-let localEngineArtifactsPath = ProcessInfo.processInfo.environment["SNES_ENGINE_ARTIFACTS_DIR"]
+let localEngineArtifactsPath = ProcessInfo.processInfo.environment["SNES9X_ENGINE_ARTIFACTS_DIR"]
 let releasedEngineAvailable = engineChecksum != String(repeating: "0", count: 64)
 let buildEngineFromSource =
-    ProcessInfo.processInfo.environment["SNES_BUILD_FROM_SOURCE"] != nil
+    ProcessInfo.processInfo.environment["SNES9X_BUILD_FROM_SOURCE"] != nil
     || (localEngineArtifactsPath == nil && !releasedEngineAvailable)
 
 let snes9xSources = [
@@ -30,10 +30,10 @@ let snes9xSources = [
 let coreTarget: Target =
     if buildEngineFromSource {
         .target(
-            name: "CSNESCore",
+            name: "CSnes9xCore",
             path: "swift/Sources",
             exclude: [
-                "SNES",
+                "Snes9x",
                 "Snes9xCore/.git",
                 "Snes9xCore/data",
                 "Snes9xCore/docs",
@@ -48,8 +48,8 @@ let coreTarget: Target =
                 "Snes9xCore/unix",
                 "Snes9xCore/win32",
             ],
-            sources: ["SNESCoreBridge"] + snes9xSources,
-            publicHeadersPath: "SNESCoreBridge/include",
+            sources: ["Snes9xCoreBridge"] + snes9xSources,
+            publicHeadersPath: "Snes9xCoreBridge/include",
             cSettings: [
                 .headerSearchPath("Snes9xCore"),
                 .headerSearchPath("Snes9xCore/apu"),
@@ -76,27 +76,27 @@ let coreTarget: Target =
             ]
         )
     } else if let localEngineArtifactsPath {
-        .binaryTarget(name: "CSNESCore", path: "\(localEngineArtifactsPath)/CSNESCore.xcframework")
+        .binaryTarget(name: "CSnes9xCore", path: "\(localEngineArtifactsPath)/CSnes9xCore.xcframework")
     } else {
         .binaryTarget(
-            name: "CSNESCore",
-            url: "\(engineBinaryBaseURL)/CSNESCore.xcframework.zip",
+            name: "CSnes9xCore",
+            url: "\(engineBinaryBaseURL)/CSnes9xCore.xcframework.zip",
             checksum: engineChecksum
         )
     }
 
 let package = Package(
-    name: "snes",
+    name: "snes9x",
     platforms: [.iOS(.v17), .tvOS(.v17), .macOS(.v15)],
-    products: [.library(name: "SNES", targets: ["SNES"])],
+    products: [.library(name: "Snes9x", targets: ["Snes9x"])],
     targets: [
         .target(
-            name: "SNES",
-            dependencies: ["CSNESCore"],
-            path: "swift/Sources/SNES",
+            name: "Snes9x",
+            dependencies: ["CSnes9xCore"],
+            path: "swift/Sources/Snes9x",
             linkerSettings: [.linkedLibrary("c++")]
         ),
-        .testTarget(name: "SNESTests", dependencies: ["SNES", "CSNESCore"], path: "swift/Tests/SNESTests"),
+        .testTarget(name: "Snes9xTests", dependencies: ["Snes9x", "CSnes9xCore"], path: "swift/Tests/Snes9xTests"),
         coreTarget,
     ],
     swiftLanguageModes: [.v5],

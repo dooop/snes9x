@@ -46,11 +46,11 @@ case "$SLICE_ID" in
         ;;
 esac
 
-export SNES_BUILD_FROM_SOURCE=1
+export SNES9X_BUILD_FROM_SOURCE=1
 
 cd "$REPO_ROOT"
 xcodebuild build -quiet \
-    -scheme snes \
+    -scheme snes9x \
     -destination "$DESTINATION" \
     -configuration Release \
     -derivedDataPath "$WORK_DIR/DerivedData" \
@@ -63,24 +63,24 @@ xcodebuild build -quiet \
     CODE_SIGNING_REQUIRED=NO
 
 PRODUCT_DIR="$WORK_DIR/DerivedData/Build/Products"
-OBJECT="$(find "$PRODUCT_DIR" -maxdepth 3 -type f -name 'CSNESCore.o' -print -quit)"
+OBJECT="$(find "$PRODUCT_DIR" -maxdepth 3 -type f -name 'CSnes9xCore.o' -print -quit)"
 if [ -z "$OBJECT" ]; then
-    echo "CSNESCore.o was not produced for $SLICE_ID" >&2
+    echo "CSnes9xCore.o was not produced for $SLICE_ID" >&2
     find "$PRODUCT_DIR" -maxdepth 3 -type f -print >&2 || true
     exit 1
 fi
 
 rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR/Headers"
-xcrun libtool -static -o "$OUTPUT_DIR/libCSNESCore.a" "$OBJECT"
-xcrun strip -S "$OUTPUT_DIR/libCSNESCore.a"
-cp swift/Sources/SNESCoreBridge/include/snes_engine.h "$OUTPUT_DIR/Headers/"
+xcrun libtool -static -o "$OUTPUT_DIR/libCSnes9xCore.a" "$OBJECT"
+xcrun strip -S "$OUTPUT_DIR/libCSnes9xCore.a"
+cp swift/Sources/Snes9xCoreBridge/include/snes9x_engine.h "$OUTPUT_DIR/Headers/"
 
 cat > "$OUTPUT_DIR/Headers/module.modulemap" <<'EOF'
-module CSNESCore {
-    header "snes_engine.h"
+module CSnes9xCore {
+    header "snes9x_engine.h"
     export *
 }
 EOF
 
-echo "Built $SLICE_ID: $(lipo -archs "$OUTPUT_DIR/libCSNESCore.a")"
+echo "Built $SLICE_ID: $(lipo -archs "$OUTPUT_DIR/libCSnes9xCore.a")"
