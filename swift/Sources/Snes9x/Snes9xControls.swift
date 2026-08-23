@@ -38,7 +38,9 @@ public struct Snes9xControls: View {
     }
 
     private func resolvedMode(for size: CGSize) -> Snes9xControllerPresentationMode {
-        guard configuration.presentationMode == .automatic else { return configuration.presentationMode }
+        guard configuration.presentationMode == .automatic else {
+            return configuration.presentationMode
+        }
         return size.width > size.height || size.height < 300 ? .overlay : .gamepad
     }
 
@@ -76,8 +78,10 @@ public struct Snes9xControls: View {
         ZStack(alignment: .bottom) {
             dPad(metrics: metrics, palette: palette, opacity: configuration.overlayOpacity)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-            utilityButtons(metrics: metrics, palette: palette, opacity: configuration.overlayOpacity)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            utilityButtons(
+                metrics: metrics, palette: palette, opacity: configuration.overlayOpacity
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             actionButtons(metrics: metrics, palette: palette, opacity: configuration.overlayOpacity)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
@@ -112,7 +116,8 @@ public struct Snes9xControls: View {
     private var controllerBodyShape: AnyShape {
         switch configuration.theme {
         case .system: AnyShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        case .snes9x, .superFamicom: AnyShape(RoundedRectangle(cornerRadius: 72, style: .continuous))
+        case .snes9x, .superFamicom:
+            AnyShape(RoundedRectangle(cornerRadius: 72, style: .continuous))
         }
     }
 
@@ -121,13 +126,15 @@ public struct Snes9xControls: View {
             GridRow {
                 Color.clear.frame(width: metrics.direction, height: metrics.direction)
                 control(
-                    "▲", .up, size: CGSize(width: metrics.direction, height: metrics.direction), shape: .rounded,
+                    "▲", .up, size: CGSize(width: metrics.direction, height: metrics.direction),
+                    shape: .rounded,
                     color: palette.dPad, palette: palette, opacity: opacity)
                 Color.clear.frame(width: metrics.direction, height: metrics.direction)
             }
             GridRow {
                 control(
-                    "◀", .left, size: CGSize(width: metrics.direction, height: metrics.direction), shape: .rounded,
+                    "◀", .left, size: CGSize(width: metrics.direction, height: metrics.direction),
+                    shape: .rounded,
                     color: palette.dPad, palette: palette, opacity: opacity)
                 ZStack {
                     Rectangle().fill(palette.dPad.opacity(opacity))
@@ -138,13 +145,15 @@ public struct Snes9xControls: View {
                 }
                 .frame(width: metrics.direction, height: metrics.direction)
                 control(
-                    "▶", .right, size: CGSize(width: metrics.direction, height: metrics.direction), shape: .rounded,
+                    "▶", .right, size: CGSize(width: metrics.direction, height: metrics.direction),
+                    shape: .rounded,
                     color: palette.dPad, palette: palette, opacity: opacity)
             }
             GridRow {
                 Color.clear.frame(width: metrics.direction, height: metrics.direction)
                 control(
-                    "▼", .down, size: CGSize(width: metrics.direction, height: metrics.direction), shape: .rounded,
+                    "▼", .down, size: CGSize(width: metrics.direction, height: metrics.direction),
+                    shape: .rounded,
                     color: palette.dPad, palette: palette, opacity: opacity)
                 Color.clear.frame(width: metrics.direction, height: metrics.direction)
             }
@@ -154,10 +163,12 @@ public struct Snes9xControls: View {
     private func utilityButtons(metrics: Metrics, palette: Palette, opacity: Double) -> some View {
         HStack(spacing: metrics.utilitySpacing) {
             control(
-                "SELECT", .select, size: metrics.utility, shape: .capsule, color: palette.utility, palette: palette,
+                "SELECT", .select, size: metrics.utility, shape: .capsule, color: palette.utility,
+                palette: palette,
                 opacity: opacity)
             control(
-                "START", .start, size: metrics.utility, shape: .capsule, color: palette.utility, palette: palette,
+                "START", .start, size: metrics.utility, shape: .capsule, color: palette.utility,
+                palette: palette,
                 opacity: opacity)
         }
     }
@@ -166,30 +177,36 @@ public struct Snes9xControls: View {
         VStack(spacing: metrics.actionSpacing / 2) {
             HStack(spacing: metrics.actionSpacing) {
                 control(
-                    "L", .l, size: metrics.utility, shape: .capsule, color: palette.utility, palette: palette,
+                    "L", .l, size: metrics.utility, shape: .capsule, color: palette.utility,
+                    palette: palette,
                     opacity: opacity)
                 control(
-                    "R", .r, size: metrics.utility, shape: .capsule, color: palette.utility, palette: palette,
+                    "R", .r, size: metrics.utility, shape: .capsule, color: palette.utility,
+                    palette: palette,
                     opacity: opacity)
             }
             ZStack {
                 control(
-                    "X", .x, size: metrics.action, shape: .circle, color: palette.actionColor("X"), palette: palette,
+                    "X", .x, size: metrics.action, shape: .circle, color: palette.actionColor("X"),
+                    palette: palette,
                     opacity: opacity
                 )
                 .offset(y: -metrics.action.height * 0.72)
                 control(
-                    "Y", .y, size: metrics.action, shape: .circle, color: palette.actionColor("Y"), palette: palette,
+                    "Y", .y, size: metrics.action, shape: .circle, color: palette.actionColor("Y"),
+                    palette: palette,
                     opacity: opacity
                 )
                 .offset(x: -metrics.action.width * 0.72)
                 control(
-                    "A", .a, size: metrics.action, shape: .circle, color: palette.actionColor("A"), palette: palette,
+                    "A", .a, size: metrics.action, shape: .circle, color: palette.actionColor("A"),
+                    palette: palette,
                     opacity: opacity
                 )
                 .offset(x: metrics.action.width * 0.72)
                 control(
-                    "B", .b, size: metrics.action, shape: .circle, color: palette.actionColor("B"), palette: palette,
+                    "B", .b, size: metrics.action, shape: .circle, color: palette.actionColor("B"),
+                    palette: palette,
                     opacity: opacity
                 )
                 .offset(y: metrics.action.height * 0.72)
@@ -200,15 +217,20 @@ public struct Snes9xControls: View {
 
     @ViewBuilder
     private func control(
-        _ label: String, _ button: Snes9xControllerButton, size: CGSize, shape: ControlShape, color: Color,
+        _ label: String, _ button: Snes9xControllerButton, size: CGSize, shape: ControlShape,
+        color: Color,
         palette: Palette, opacity: Double
     ) -> some View {
         #if os(tvOS)
             Button {
                 engine.setButton(button, pressed: true)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { engine.setButton(button, pressed: false) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    engine.setButton(button, pressed: false)
+                }
             } label: {
-                controlLabel(label, size: size, shape: shape, color: color, palette: palette, opacity: opacity)
+                controlLabel(
+                    label, size: size, shape: shape, color: color, palette: palette,
+                    opacity: opacity)
             }
             .buttonStyle(.plain)
         #else
@@ -216,14 +238,17 @@ public struct Snes9xControls: View {
                 hapticsEnabled: configuration.hapticsEnabled,
                 onPressedChange: { engine.setButton(button, pressed: $0) },
                 content: {
-                    controlLabel(label, size: size, shape: shape, color: color, palette: palette, opacity: opacity)
+                    controlLabel(
+                        label, size: size, shape: shape, color: color, palette: palette,
+                        opacity: opacity)
                 }
             )
         #endif
     }
 
     private func controlLabel(
-        _ label: String, size: CGSize, shape: ControlShape, color: Color, palette: Palette, opacity: Double
+        _ label: String, size: CGSize, shape: ControlShape, color: Color, palette: Palette,
+        opacity: Double
     ) -> some View {
         Text(label)
             .font(.system(size: label.count == 1 ? 20 : 9, weight: .black, design: .rounded))
@@ -241,7 +266,8 @@ public struct Snes9xControls: View {
             #if compiler(>=6.2)
                 if #available(iOS 26.0, macOS 26.0, tvOS 26.0, *) {
                     surface.fill(.clear)
-                        .glassEffect(.regular.tint(color.opacity(opacity)).interactive(), in: surface)
+                        .glassEffect(
+                            .regular.tint(color.opacity(opacity)).interactive(), in: surface)
                 } else {
                     materialSurface(surface, color: color, opacity: opacity)
                 }
@@ -300,7 +326,8 @@ private struct Palette {
         switch theme {
         case .system:
             defaults = (
-                .primary.opacity(0.08), .primary.opacity(0.68), .accentColor, .primary.opacity(0.55), .white, .primary,
+                .primary.opacity(0.08), .primary.opacity(0.68), .accentColor,
+                .primary.opacity(0.55), .white, .primary,
                 .primary.opacity(0.12), [:]
             )
         case .superFamicom:
@@ -317,7 +344,8 @@ private struct Palette {
         case .snes9x:
             defaults = (
                 Color(red: 0.70, green: 0.70, blue: 0.68), Color(white: 0.10),
-                Color(red: 0.36, green: 0.29, blue: 0.56), Color(white: 0.24), .white, Color(white: 0.15),
+                Color(red: 0.36, green: 0.29, blue: 0.56), Color(white: 0.24), .white,
+                Color(white: 0.15),
                 Color(white: 0.62),
                 [
                     "X": Color(red: 0.72, green: 0.64, blue: 0.83),
@@ -335,7 +363,8 @@ private struct Palette {
         bodyLabel = overrides.bodyLabel ?? defaults.5
         panel = defaults.6
         if let actionOverride = overrides.actionButtons {
-            actionColors = Dictionary(uniqueKeysWithValues: ["X", "Y", "A", "B"].map { ($0, actionOverride) })
+            actionColors = Dictionary(
+                uniqueKeysWithValues: ["X", "Y", "A", "B"].map { ($0, actionOverride) })
         } else {
             actionColors = defaults.7
         }
@@ -347,36 +376,36 @@ private struct Palette {
 }
 
 #if !os(tvOS)
-private struct PressableControl<Content: View>: View {
-    let hapticsEnabled: Bool
-    let onPressedChange: (Bool) -> Void
-    @ViewBuilder let content: () -> Content
-    @State private var isPressed = false
+    private struct PressableControl<Content: View>: View {
+        let hapticsEnabled: Bool
+        let onPressedChange: (Bool) -> Void
+        @ViewBuilder let content: () -> Content
+        @State private var isPressed = false
 
-    var body: some View {
-        content()
-            .scaleEffect(isPressed ? 0.92 : 1)
-            .brightness(isPressed ? -0.12 : 0)
-            .animation(.easeOut(duration: 0.08), value: isPressed)
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in
-                        guard !isPressed else { return }
-                        isPressed = true
-                        onPressedChange(true)
-                        if hapticsEnabled { performControllerHaptic() }
-                    }
-                    .onEnded { _ in release() }
-            )
-            .onDisappear { release() }
-    }
+        var body: some View {
+            content()
+                .scaleEffect(isPressed ? 0.92 : 1)
+                .brightness(isPressed ? -0.12 : 0)
+                .animation(.easeOut(duration: 0.08), value: isPressed)
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in
+                            guard !isPressed else { return }
+                            isPressed = true
+                            onPressedChange(true)
+                            if hapticsEnabled { performControllerHaptic() }
+                        }
+                        .onEnded { _ in release() }
+                )
+                .onDisappear { release() }
+        }
 
-    private func release() {
-        guard isPressed else { return }
-        isPressed = false
-        onPressedChange(false)
+        private func release() {
+            guard isPressed else { return }
+            isPressed = false
+            onPressedChange(false)
+        }
     }
-}
 #endif
 
 private func performControllerHaptic() {

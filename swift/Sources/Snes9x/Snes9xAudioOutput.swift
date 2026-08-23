@@ -38,7 +38,9 @@ final class Snes9xAudioOutput {
         lock.lock()
         let buffer = availableBuffers.popLast()
         lock.unlock()
-        guard let buffer, frameCount <= buffer.frameCapacity, let destination = buffer.int16ChannelData?[0] else {
+        guard let buffer, frameCount <= buffer.frameCapacity,
+            let destination = buffer.int16ChannelData?[0]
+        else {
             return
         }
 

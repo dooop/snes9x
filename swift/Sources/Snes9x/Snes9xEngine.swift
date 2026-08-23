@@ -67,7 +67,8 @@ public final class Snes9xEngine: ObservableObject {
             self.core = core
 
             do {
-                let saveURL = try self.saveURL(for: configuration.romURL, directory: configuration.saveDirectory)
+                let saveURL = try self.saveURL(
+                    for: configuration.romURL, directory: configuration.saveDirectory)
                 try FileManager.default.createDirectory(
                     at: saveURL.deletingLastPathComponent(),
                     withIntermediateDirectories: true
@@ -77,7 +78,8 @@ public final class Snes9xEngine: ObservableObject {
                     return
                 }
             } catch {
-                self.fail("The ROM or save file could not be prepared: \(error.localizedDescription)")
+                self.fail(
+                    "The ROM or save file could not be prepared: \(error.localizedDescription)")
                 return
             }
 
@@ -123,7 +125,8 @@ public final class Snes9xEngine: ObservableObject {
     public func setButton(_ button: Snes9xControllerButton, player: Int = 0, pressed: Bool) {
         queue.async { [weak self] in
             guard let core = self?.core, player >= 0 else { return }
-            snes9x_engine_set_button(core, UInt32(player), Snes9xButton(rawValue: UInt32(button.rawValue)), pressed)
+            snes9x_engine_set_button(
+                core, UInt32(player), Snes9xButton(rawValue: UInt32(button.rawValue)), pressed)
         }
     }
 
@@ -148,7 +151,9 @@ public final class Snes9xEngine: ObservableObject {
 
     private func installTimer(core: OpaquePointer) {
         let timer = DispatchSource.makeTimerSource(queue: queue)
-        timer.schedule(deadline: .now(), repeating: snes9x_engine_frame_duration(core), leeway: .milliseconds(1))
+        timer.schedule(
+            deadline: .now(), repeating: snes9x_engine_frame_duration(core),
+            leeway: .milliseconds(1))
         timer.setEventHandler { [weak self] in self?.runFrame(core: core) }
         self.timer = timer
         timer.resume()
@@ -164,7 +169,9 @@ public final class Snes9xEngine: ObservableObject {
         let width = Int(snes9x_engine_video_width(core))
         let height = Int(snes9x_engine_video_height(core))
         guard width > 0, height > 0 else { return }
-        let data = Data(bytes: pixels, count: Int(snes9x_engine_video_pixel_count(core)) * MemoryLayout<UInt32>.size)
+        let data = Data(
+            bytes: pixels,
+            count: Int(snes9x_engine_video_pixel_count(core)) * MemoryLayout<UInt32>.size)
         guard let provider = CGDataProvider(data: data as CFData),
             let image = CGImage(
                 width: width,
@@ -190,7 +197,8 @@ public final class Snes9xEngine: ObservableObject {
                 for: .applicationSupportDirectory,
                 in: .userDomainMask
             )[0].appendingPathComponent("Snes9x/Saves", isDirectory: true)
-        return baseDirectory.appendingPathComponent(try stableGameIdentifier(for: romURL)).appendingPathExtension("srm")
+        return baseDirectory.appendingPathComponent(try stableGameIdentifier(for: romURL))
+            .appendingPathExtension("srm")
     }
 
     private func stableGameIdentifier(for romURL: URL) throws -> String {

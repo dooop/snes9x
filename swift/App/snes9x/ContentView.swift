@@ -29,11 +29,11 @@ struct ContentView: View {
                         description: Text("Open a game file using a URL.")
                     )
                 #else
-                Button("Open game file") {
-                    isImportingROM = true
-                }
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier("openROMButton")
+                    Button("Open game file") {
+                        isImportingROM = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("openROMButton")
                 #endif
             }
         }

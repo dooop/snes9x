@@ -76,7 +76,8 @@ let coreTarget: Target =
             ]
         )
     } else if let localEngineArtifactsPath {
-        .binaryTarget(name: "CSnes9xCore", path: "\(localEngineArtifactsPath)/CSnes9xCore.xcframework")
+        .binaryTarget(
+            name: "CSnes9xCore", path: "\(localEngineArtifactsPath)/CSnes9xCore.xcframework")
     } else {
         .binaryTarget(
             name: "CSnes9xCore",
@@ -96,7 +97,9 @@ let package = Package(
             path: "swift/Sources/Snes9x",
             linkerSettings: [.linkedLibrary("c++")]
         ),
-        .testTarget(name: "Snes9xTests", dependencies: ["Snes9x", "CSnes9xCore"], path: "swift/Tests/Snes9xTests"),
+        .testTarget(
+            name: "Snes9xTests", dependencies: ["Snes9x", "CSnes9xCore"],
+            path: "swift/Tests/Snes9xTests"),
         coreTarget,
     ],
     swiftLanguageModes: [.v5],

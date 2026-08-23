@@ -81,7 +81,8 @@ public struct Snes9xControllerConfiguration {
     var resolvedControllerLabel: String {
         if let controllerLabel { return controllerLabel }
         for key in ["CFBundleDisplayName", "CFBundleName"] {
-            if let value = Bundle.main.object(forInfoDictionaryKey: key) as? String, !value.isEmpty {
+            if let value = Bundle.main.object(forInfoDictionaryKey: key) as? String, !value.isEmpty
+            {
                 return value
             }
         }
