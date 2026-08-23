@@ -2,8 +2,8 @@
 import Foundation
 import PackageDescription
 
-let engineBinaryBaseURL = "https://github.com/dooop/snes9x/releases/download/0.1.1"
-let engineChecksum = "c22e5af11b4fd2e8dff14a544989bc1c5f984c472836e512726aa507f3515290"
+let engineBinaryBaseURL = "https://github.com/dooop/snes9x/releases/download/0.1.2"
+let engineChecksum = "0de2966c0c90231bb0bd94c76915da2c477ff58ffa4f9d908b4212b8ba263d73"
 let localEngineArtifactsPath = ProcessInfo.processInfo.environment["SNES9X_ENGINE_ARTIFACTS_DIR"]
 let releasedEngineAvailable = engineChecksum != String(repeating: "0", count: 64)
 let buildEngineFromSource =
