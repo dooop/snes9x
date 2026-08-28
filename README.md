@@ -14,7 +14,46 @@ android/
 scripts/                   build, packaging, and validation entry points
 ```
 
-The shared bridge implements ROM loading, automatic PAL/NTSC timing, dynamic 256/512-pixel video, 32,040 Hz stereo PCM audio, two controllers, SRAM, save states, reset, and Snes9x cheat codes. It also enforces Snes9x's process-global callback constraint by allowing only one native engine per process. ROM content is hashed once at startup so Apple and Android use stable, collision-resistant SRAM identities.
+The shared bridge implements ROM loading, automatic PAL/NTSC timing, dynamic 256/512-pixel video, 32,040 Hz stereo PCM audio, two controllers, SRAM, save states, autosaving, reset, and Snes9x cheat codes. It also enforces Snes9x's process-global callback constraint by allowing only one native engine per process. ROM content is hashed once at startup so Apple and Android use stable, collision-resistant SRAM and autosave identities.
+
+## Autosaving
+
+Autosaving is on by default on both platforms. The engine restores the automatic save state right after the ROM loads, rewrites it every 30 seconds while running, and writes it again on pause and on stop, so a session resumes where it left off. Automatic save states are stored as `<game-digest>.state` next to the `<game-digest>.srm` battery saves:
+
+| | Battery saves | Automatic save states |
+| --- | --- | --- |
+| Apple | `<Application Support>/Snes9x/Saves` | `<Application Support>/Snes9x/Autosaves` |
+| Android | `<filesDir>/Snes9x/Saves` | `<filesDir>/Snes9x/Autosaves` |
+
+Both directories, the interval, and the feature itself are configurable, and `writeAutosave()`/`deleteAutosave()` give hosts explicit control. A missing autosave is not an error: the session then starts from the battery save.
+
+```swift
+Snes9x(
+    configuration: Snes9xConfiguration(
+        romURL: romURL,
+        saveDirectory: mySavesDirectory,
+        autosaveEnabled: true,
+        autosaveDirectory: myAutosavesDirectory,
+        autosaveInterval: 60
+    )
+)
+```
+
+```kotlin
+Snes9x(
+    configuration =
+        Snes9xConfiguration(
+            romUri = documentUri,
+            saveDirectory = mySavesDirectory,
+            autosaveEnabled = true,
+            autosaveDirectory = myAutosavesDirectory,
+            autosaveIntervalSeconds = 60,
+        ),
+    modifier = Modifier.fillMaxSize(),
+)
+```
+
+Apple resolves unconfigured directories through `Snes9xConfiguration.defaultSaveDirectory` and `defaultAutosaveDirectory`; Android resolves them against the app's `filesDir`, which has no static equivalent because it needs a `Context`.
 
 ## Apple
 
@@ -44,7 +83,7 @@ The public `Snes9x` target is always built from source. `CSnes9xCore` supports t
 - Source mode compiles the bridge and pinned `snes9x/` submodule when `SNES9X_BUILD_FROM_SOURCE=1` is set. It is also the fallback until `Package.swift` contains a real binary checksum.
 - Binary mode downloads the pinned framework-based `CSnes9xCore.xcframework.zip`, or consumes a local artifact from `SNES9X_ENGINE_ARTIFACTS_DIR`. Its module map is namespaced inside `CSnes9xCore.framework/Modules`, so it can coexist with other static binary packages in one app.
 
-`Snes9x` starts on appearance and stops on disappearance. `Snes9xView(engine:)` and `Snes9xEngine` provide explicit lifecycle, save-state, reset, cheat, and custom-control access. Apple game controllers and keyboards map D-pad, A/B/X/Y, L/R, Start, and Select for up to two players. Connecting an external controller hides touch controls; tvOS requests a controller instead of showing touch input.
+`Snes9x` starts on appearance and stops on disappearance. `Snes9xView(engine:)` and `Snes9xEngine` provide explicit lifecycle, save-state, autosave, reset, cheat, and custom-control access. Apple game controllers and keyboards map D-pad, A/B/X/Y, L/R, Start, and Select for up to two players. Connecting an external controller hides touch controls; tvOS requests a controller instead of showing touch input.
 
 The on-screen controller offers the default adaptive `system` theme plus `snes9x` with the original two-tone-purple palette and `superFamicom` with the original four-color palette. Every on-screen button provides tactile press feedback by default; set `hapticsEnabled` to `false` to disable it. The controller body uses the host app name by default; `controllerLabel` can replace it or hide it with an empty string:
 

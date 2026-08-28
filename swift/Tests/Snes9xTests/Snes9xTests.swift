@@ -23,6 +23,44 @@ import Testing
     #expect(Snes9xConfiguration(romURL: url).romURL == url)
 }
 
+@Test func autosaveIsEnabledByDefault() {
+    let configuration = Snes9xConfiguration(romURL: URL(fileURLWithPath: "/tmp/game.sfc"))
+    #expect(configuration.autosaveEnabled)
+    #expect(configuration.autosaveDirectory == nil)
+    #expect(configuration.autosaveInterval == 30)
+    #expect(configuration.saveDirectory == nil)
+}
+
+@Test func unconfiguredSaveDirectoriesLiveBesideEachOtherInTheRuntimeDirectory() {
+    let configuration = Snes9xConfiguration(romURL: URL(fileURLWithPath: "/tmp/game.sfc"))
+    #expect(configuration.resolvedSaveDirectory == Snes9xConfiguration.defaultSaveDirectory)
+    #expect(configuration.resolvedAutosaveDirectory == Snes9xConfiguration.defaultAutosaveDirectory)
+    #expect(configuration.resolvedSaveDirectory.lastPathComponent == "Saves")
+    #expect(configuration.resolvedAutosaveDirectory.lastPathComponent == "Autosaves")
+    #expect(
+        configuration.resolvedSaveDirectory.deletingLastPathComponent()
+            == configuration.resolvedAutosaveDirectory.deletingLastPathComponent()
+    )
+}
+
+@Test func configuredSaveDirectoriesReplaceTheDefaults() {
+    let saves = URL(fileURLWithPath: "/tmp/snes9x-saves", isDirectory: true)
+    let autosaves = URL(fileURLWithPath: "/tmp/snes9x-autosaves", isDirectory: true)
+    let configuration = Snes9xConfiguration(
+        romURL: URL(fileURLWithPath: "/tmp/game.sfc"),
+        saveDirectory: saves,
+        autosaveDirectory: autosaves
+    )
+    #expect(configuration.resolvedSaveDirectory == saves)
+    #expect(configuration.resolvedAutosaveDirectory == autosaves)
+}
+
+@Test func autosaveCanBeDisabled() {
+    let configuration = Snes9xConfiguration(
+        romURL: URL(fileURLWithPath: "/tmp/game.sfc"), autosaveEnabled: false)
+    #expect(!configuration.autosaveEnabled)
+}
+
 @Test func controllerButtonsMatchTheLibretroSNESContract() {
     #expect(Snes9xControllerButton.b.rawValue == 0x01)
     #expect(Snes9xControllerButton.y.rawValue == 0x02)

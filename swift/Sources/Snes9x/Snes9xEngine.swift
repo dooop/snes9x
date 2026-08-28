@@ -22,6 +22,8 @@ public final class Snes9xEngine: ObservableObject {
     private let queueKey = DispatchSpecificKey<Void>()
     private var core: OpaquePointer?
     private var timer: DispatchSourceTimer?
+    private var autosaveTimer: DispatchSourceTimer?
+    private var autosaveURL: URL?
     private var audio: Snes9xAudioOutput?
     private var controller: Snes9xGameController?
     private var paused = false
@@ -67,12 +69,19 @@ public final class Snes9xEngine: ObservableObject {
             self.core = core
 
             do {
-                let saveURL = try self.saveURL(
-                    for: configuration.romURL, directory: configuration.saveDirectory)
+                let identifier = try self.stableGameIdentifier(for: configuration.romURL)
+                let saveDirectory = configuration.resolvedSaveDirectory
                 try FileManager.default.createDirectory(
-                    at: saveURL.deletingLastPathComponent(),
-                    withIntermediateDirectories: true
-                )
+                    at: saveDirectory, withIntermediateDirectories: true)
+                let saveURL = saveDirectory.appendingPathComponent(identifier)
+                    .appendingPathExtension("srm")
+                if configuration.autosaveEnabled {
+                    let autosaveDirectory = configuration.resolvedAutosaveDirectory
+                    try FileManager.default.createDirectory(
+                        at: autosaveDirectory, withIntermediateDirectories: true)
+                    self.autosaveURL = autosaveDirectory.appendingPathComponent(identifier)
+                        .appendingPathExtension("state")
+                }
                 guard snes9x_engine_load_rom(core, configuration.romURL.path, saveURL.path) else {
                     self.fail(String(cString: snes9x_engine_last_error(core)))
                     return
@@ -83,9 +92,11 @@ public final class Snes9xEngine: ObservableObject {
                 return
             }
 
+            self.restoreAutosaveOnQueue()
             self.audio = Snes9xAudioOutput()
             self.audio?.start()
             self.installTimer(core: core)
+            self.installAutosaveTimer()
             DispatchQueue.main.async { [weak self] in self?.state = .running }
         }
     }
@@ -97,6 +108,7 @@ public final class Snes9xEngine: ObservableObject {
             self.paused = true
             snes9x_engine_reset_inputs(self.core)
             self.audio?.pause()
+            self.writeAutosaveOnQueue()
             DispatchQueue.main.async { [weak self] in self?.state = .paused }
         }
     }
@@ -138,6 +150,22 @@ public final class Snes9xEngine: ObservableObject {
     @discardableResult
     public func loadState(from url: URL) -> Bool {
         performSynchronously { core.map { snes9x_engine_load_state($0, url.path) } ?? false }
+    }
+
+    /// Writes the automatic save state immediately.
+    @discardableResult
+    public func writeAutosave() -> Bool {
+        performSynchronously { writeAutosaveOnQueue() }
+    }
+
+    /// Removes the automatic save state so the next start begins from the battery save.
+    @discardableResult
+    public func deleteAutosave() -> Bool {
+        // Resolve off the engine queue when no session is loaded so ROM hashing never stalls frames.
+        guard let url = performSynchronously({ autosaveURL }) ?? autosaveURLForCurrentROM() else {
+            return false
+        }
+        return (try? FileManager.default.removeItem(at: url)) != nil
     }
 
     @discardableResult
@@ -190,15 +218,45 @@ public final class Snes9xEngine: ObservableObject {
         DispatchQueue.main.async { [weak self] in self?.frame = image }
     }
 
-    private func saveURL(for romURL: URL, directory: URL?) throws -> URL {
-        let baseDirectory =
-            directory
-            ?? FileManager.default.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
-            )[0].appendingPathComponent("Snes9x/Saves", isDirectory: true)
-        return baseDirectory.appendingPathComponent(try stableGameIdentifier(for: romURL))
-            .appendingPathExtension("srm")
+    private func installAutosaveTimer() {
+        guard configuration.autosaveEnabled, configuration.autosaveInterval > 0,
+            autosaveURL != nil
+        else { return }
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(
+            deadline: .now() + configuration.autosaveInterval,
+            repeating: configuration.autosaveInterval,
+            leeway: .seconds(1))
+        timer.setEventHandler { [weak self] in
+            guard let self, !self.paused else { return }
+            self.writeAutosaveOnQueue()
+        }
+        autosaveTimer = timer
+        timer.resume()
+    }
+
+    @discardableResult
+    private func writeAutosaveOnQueue() -> Bool {
+        guard configuration.autosaveEnabled, let core, let url = autosaveURL,
+            snes9x_engine_is_loaded(core)
+        else { return false }
+        return snes9x_engine_save_state(core, url.path)
+    }
+
+    private func restoreAutosaveOnQueue() {
+        guard configuration.autosaveEnabled, let core, let url = autosaveURL,
+            FileManager.default.fileExists(atPath: url.path)
+        else { return }
+        // A missing or unreadable autosave is not an error; the battery save already loaded.
+        _ = snes9x_engine_load_state(core, url.path)
+    }
+
+    private func autosaveURLForCurrentROM() -> URL? {
+        guard configuration.autosaveEnabled,
+            let identifier = try? stableGameIdentifier(for: configuration.romURL)
+        else { return nil }
+        return configuration.resolvedAutosaveDirectory.appendingPathComponent(identifier)
+            .appendingPathExtension("state")
     }
 
     private func stableGameIdentifier(for romURL: URL) throws -> String {
@@ -223,6 +281,10 @@ public final class Snes9xEngine: ObservableObject {
     private func stopOnQueue(finalState: Snes9xState = .stopped) {
         timer?.cancel()
         timer = nil
+        autosaveTimer?.cancel()
+        autosaveTimer = nil
+        writeAutosaveOnQueue()
+        autosaveURL = nil
         audio?.stop()
         audio = nil
         if let core {

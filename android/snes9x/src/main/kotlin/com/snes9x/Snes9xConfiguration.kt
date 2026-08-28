@@ -4,9 +4,18 @@
 package com.snes9x
 
 import android.net.Uri
+import java.io.File
 
 data class Snes9xConfiguration(
     val romUri: Uri,
+    /** Directory for battery saves; `null` uses `filesDir/Snes9x/Saves`. */
+    val saveDirectory: File? = null,
+    /** Writes and restores an automatic save state for the loaded ROM. */
+    val autosaveEnabled: Boolean = true,
+    /** Directory for automatic save states; `null` uses `filesDir/Snes9x/Autosaves`. */
+    val autosaveDirectory: File? = null,
+    /** Seconds between automatic save states while the engine is running. */
+    val autosaveIntervalSeconds: Long = 30,
     val automaticallyStarts: Boolean = true,
     val showsTouchControls: Boolean = true,
 )

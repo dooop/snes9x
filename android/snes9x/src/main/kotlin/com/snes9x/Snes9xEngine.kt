@@ -39,6 +39,8 @@ class Snes9xEngine(
     private var audioTrack: AudioTrack? = null
     private var ownsClaim = false
 
+    @Volatile private var autosaveFile: File? = null
+
     fun start() {
         if (_state.value !is Snes9xState.Idle && _state.value !is Snes9xState.Stopped) return
         if (!engineClaimed.compareAndSet(false, true)) {
@@ -92,6 +94,20 @@ class Snes9xEngine(
     fun loadState(file: File): Boolean =
         synchronized(nativeLock) { handle != 0L && NativeSnes9x.loadState(handle, file.path) }
 
+    /** Writes the automatic save state immediately. */
+    fun writeAutosave(): Boolean = synchronized(nativeLock) { writeAutosaveLocked() }
+
+    /**
+     * Removes the automatic save state so the next start begins from the battery save.
+     *
+     * Re-reads the ROM to recover the save identity when no session has been prepared yet, so call
+     * this off the main thread.
+     */
+    fun deleteAutosave(): Boolean {
+        val file = autosaveFile ?: runCatching { autosaveFileForROM() }.getOrNull() ?: return false
+        return !file.exists() || file.delete()
+    }
+
     fun addCheat(code: String): Boolean =
         synchronized(nativeLock) { handle != 0L && NativeSnes9x.addCheat(handle, code) }
 
@@ -102,7 +118,10 @@ class Snes9xEngine(
     override fun close() {
         stopped = true
         executor.shutdownNow()
-        synchronized(nativeLock) { releaseNative() }
+        synchronized(nativeLock) {
+            writeAutosaveLocked()
+            releaseNative()
+        }
         releaseClaim()
         _frame.value = null
         _state.value = Snes9xState.Stopped
@@ -110,17 +129,18 @@ class Snes9xEngine(
 
     private fun prepareAndRun() {
         try {
-            val runtimeDirectory = File(appContext.filesDir, "Snes9x").apply { check(mkdirs() || isDirectory) }
+            val runtimeDirectory = runtimeDirectory().apply { check(mkdirs() || isDirectory) }
             val stagedROM = File(appContext.cacheDir, "snes9x-current.sfc")
             val digest = copyROMAndDigest(stagedROM)
-            val saveDirectory = File(runtimeDirectory, "Saves").apply { check(mkdirs() || isDirectory) }
-            val save = File(saveDirectory, "$digest.srm")
+            val save = configuration.resolveSaveFile(runtimeDirectory, digest).ensureParentDirectory()
+            autosaveFile = configuration.resolveAutosaveFile(runtimeDirectory, digest)?.ensureParentDirectory()
 
             synchronized(nativeLock) {
                 if (stopped) return
                 handle = NativeSnes9x.create(runtimeDirectory.path)
                 check(handle != 0L) { "Snes9x could not be initialized or is already in use." }
                 check(NativeSnes9x.loadROM(handle, stagedROM.path, save.path)) { NativeSnes9x.lastError(handle) }
+                restoreAutosaveLocked()
                 audioTrack = createAudioTrack().also(AudioTrack::play)
             }
             _state.value = Snes9xState.Running
@@ -135,6 +155,32 @@ class Snes9xEngine(
                 _state.value = Snes9xState.Failed(error.message ?: "Unknown Snes9x error")
             }
         }
+    }
+
+    private fun runtimeDirectory(): File = File(appContext.filesDir, "Snes9x")
+
+    private fun File.ensureParentDirectory(): File {
+        val parent = requireNotNull(parentFile) { "The save location has no parent directory." }
+        check(parent.mkdirs() || parent.isDirectory) { "The save directory could not be created." }
+        return this
+    }
+
+    private fun autosaveFileForROM(): File? {
+        if (!configuration.autosaveEnabled) return null
+        val digest = MessageDigest.getInstance("SHA-256")
+        appContext.contentResolver.openInputStream(configuration.romUri).use { input ->
+            requireNotNull(input) { "The ROM file could not be opened." }
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                digest.update(buffer, 0, count)
+            }
+        }
+        return configuration.resolveAutosaveFile(
+            runtimeDirectory(),
+            digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) },
+        )
     }
 
     private fun copyROMAndDigest(destination: File): String {
@@ -160,14 +206,22 @@ class Snes9xEngine(
         var bitmaps: Array<Bitmap>? = null
         var bitmapIndex = 0
         val frameNanos = (NativeSnes9x.frameDuration(handle) * 1_000_000_000.0).toLong()
+        val autosaveNanos = configuration.autosaveIntervalSeconds * 1_000_000_000L
         var nextFrame = System.nanoTime()
+        var nextAutosave = nextFrame + autosaveNanos
+        var autosavedWhilePaused = false
 
         while (!stopped) {
             if (paused) {
+                if (!autosavedWhilePaused) {
+                    synchronized(nativeLock) { writeAutosaveLocked() }
+                    autosavedWhilePaused = true
+                }
                 Thread.sleep(10)
                 nextFrame = System.nanoTime()
                 continue
             }
+            autosavedWhilePaused = false
             var width = 0
             var height = 0
             val audioSamples =
@@ -193,6 +247,11 @@ class Snes9xEngine(
                 synchronized(nativeLock) { audioTrack?.write(samples, 0, audioSamples, AudioTrack.WRITE_BLOCKING) }
             }
 
+            if (autosaveNanos > 0 && autosaveFile != null && System.nanoTime() >= nextAutosave) {
+                synchronized(nativeLock) { writeAutosaveLocked() }
+                nextAutosave = System.nanoTime() + autosaveNanos
+            }
+
             nextFrame += frameNanos
             val remaining = nextFrame - System.nanoTime()
             if (remaining > 0) {
@@ -201,6 +260,18 @@ class Snes9xEngine(
                 nextFrame = System.nanoTime()
             }
         }
+    }
+
+    private fun writeAutosaveLocked(): Boolean {
+        val file = autosaveFile ?: return false
+        return handle != 0L && NativeSnes9x.saveState(handle, file.path)
+    }
+
+    private fun restoreAutosaveLocked() {
+        val file = autosaveFile ?: return
+        if (handle == 0L) return
+        // A missing or unreadable autosave is not an error; the battery save already loaded.
+        if (file.isFile) NativeSnes9x.loadState(handle, file.path)
     }
 
     private fun releaseNative() {
@@ -216,6 +287,7 @@ class Snes9xEngine(
             NativeSnes9x.destroy(handle)
             handle = 0
         }
+        autosaveFile = null
     }
 
     private fun releaseClaim() {
