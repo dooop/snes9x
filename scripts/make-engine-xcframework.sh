@@ -54,6 +54,23 @@ for slice in \
     }
 done
 
+for platform_metadata in \
+    "ios-arm64:iPhoneOS" \
+    "tvos-arm64:AppleTVOS"; do
+    slice="${platform_metadata%%:*}"
+    supported_platform="${platform_metadata#*:}"
+    plist="$OUTPUT_DIR/CSnes9xCore.xcframework/$slice/CSnes9xCore.framework/Info.plist"
+    test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$plist")" = "17.0" || {
+        echo "XCFramework $slice has an invalid minimum OS version." >&2
+        exit 1
+    }
+    test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$plist")" = \
+        "$supported_platform" || {
+        echo "XCFramework $slice has an invalid supported platform." >&2
+        exit 1
+    }
+done
+
 MACOS_FRAMEWORK="$OUTPUT_DIR/CSnes9xCore.xcframework/macos-arm64_x86_64/CSnes9xCore.framework"
 test -f "$MACOS_FRAMEWORK/Versions/Current/Resources/Info.plist" || {
     echo "The macOS framework must use a versioned bundle layout." >&2

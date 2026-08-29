@@ -23,6 +23,8 @@ case "$SLICE_ID" in
     ios-arm64)
         DESTINATION="generic/platform=iOS"
         ARCHS="arm64"
+        MINIMUM_OS_VERSION="17.0"
+        SUPPORTED_PLATFORM="iPhoneOS"
         ;;
     ios-arm64_x86_64-simulator)
         DESTINATION="generic/platform=iOS Simulator"
@@ -31,6 +33,8 @@ case "$SLICE_ID" in
     tvos-arm64)
         DESTINATION="generic/platform=tvOS"
         ARCHS="arm64"
+        MINIMUM_OS_VERSION="17.0"
+        SUPPORTED_PLATFORM="AppleTVOS"
         ;;
     tvos-arm64_x86_64-simulator)
         DESTINATION="generic/platform=tvOS Simulator"
@@ -130,5 +134,14 @@ cat > "$FRAMEWORK_PLIST" <<'EOF'
 </dict>
 </plist>
 EOF
+
+if [ -n "${MINIMUM_OS_VERSION:-}" ]; then
+    /usr/libexec/PlistBuddy -c \
+        "Add :MinimumOSVersion string $MINIMUM_OS_VERSION" "$FRAMEWORK_PLIST"
+    /usr/libexec/PlistBuddy -c \
+        "Add :CFBundleSupportedPlatforms array" "$FRAMEWORK_PLIST"
+    /usr/libexec/PlistBuddy -c \
+        "Add :CFBundleSupportedPlatforms:0 string $SUPPORTED_PLATFORM" "$FRAMEWORK_PLIST"
+fi
 
 echo "Built $SLICE_ID: $(lipo -archs "$FRAMEWORK_BINARY")"
